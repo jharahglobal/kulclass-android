@@ -512,4 +512,13 @@ Future<String?> onMergeAudioWithVideo(String videoPath, String audioPath) async 
   void onPauseAudio() {
     if (selectedSound != null) { audioPlayer.pause(); }
   }
+
+  String? recordedVideoPath; 
+
+  // 2. Ensure your camera init method is named 'initCamera'
+  // If it's named 'onInit' or something else, rename it to 'initCamera'
+  Future<void> initCamera() async {
+    // Your camera initialization logic here...
+    update(["onInitializeCamera"]);
+  }
 }
