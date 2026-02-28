@@ -147,7 +147,7 @@ class EditReelsView extends StatelessWidget {
           return Padding(
             padding: EdgeInsets.symmetric(horizontal: Get.width / 6.5, vertical: 25),
             child: controller.isLoading 
-                ? const SizedBox(height: 50, child: LoadingUi()) 
+                ? SizedBox(height: 50, child: LoadingUi()) 
                 : AppButtonUi(
                     title: EnumLocal.txtSubmit.name.tr,
                     gradient: AppColor.primaryLinearGradient,
