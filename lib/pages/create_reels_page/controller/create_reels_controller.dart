@@ -104,46 +104,24 @@ class CreateReelsController extends GetxController {
   }
 
   Future<void> onInitializeCamera() async {
-    isCameraError = false; 
-    errorMessage = "";
+  try {
+    final cameras = await availableCameras();
+    if (cameras.isEmpty) throw Exception("No cameras available");
 
-    try {
-      final cameras = await availableCameras();
-      
-      if (cameras.isEmpty) {
-        isCameraError = true;
-        errorMessage = "No Camera Found";
-        update(["onInitializeCamera"]);
-        return;
-      }
+    cameraController = CameraController(
+      cameras.firstWhere((c) => c.lensDirection == cameraLensDirection, orElse: () => cameras.first),
+      ResolutionPreset.high,
+      enableAudio: true, // Crucial for initial recording
+    );
 
-      CameraDescription camera;
-      try {
-        camera = cameras.firstWhere(
-          (c) => c.lensDirection == CameraLensDirection.back,
-          orElse: () => cameras.first,
-        );
-      } catch (e) {
-        camera = cameras.first;
-      }
-
-      cameraController = CameraController(
-        camera, 
-        ResolutionPreset.high, 
-        enableAudio: true,
-        imageFormatGroup: ImageFormatGroup.jpeg, 
-      );
-
-      await cameraController?.initialize();
-      update(["onInitializeCamera"]); 
-      
-    } catch (e) {
-      isCameraError = true; 
-      errorMessage = e.toString();
-      update(["onInitializeCamera"]);
-      Utils.showToast("Failed to start camera");
-    }
+    await cameraController!.initialize();
+    update(["onInitializeCamera"]);
+  } catch (e) {
+    isCameraError = true;
+    errorMessage = e.toString();
+    update(["onInitializeCamera"]);
   }
+}
 
   Future<void> onDisposeCamera() async {
     cameraController?.dispose();
@@ -337,21 +315,32 @@ class CreateReelsController extends GetxController {
     return videoWithoutAudioPath;
   }
 
-  Future<String?> onMergeAudioWithVideo(String videoPath, String audioPath) async {
-    final String path = '${(await getTemporaryDirectory()).path}/FV_${DateTime.now().millisecondsSinceEpoch}.mp4';
-    videoTime = (await CustomVideoTime.onGet(videoPath) ?? 0).toDouble();
-    final soundTime = (await onGetSoundTime(audioPath) ?? 0);
+  // Update your onMergeAudioWithVideo with this high-performance command:
+Future<String?> onMergeAudioWithVideo(String videoPath, String audioPath) async {
+  final String path = '${(await getTemporaryDirectory()).path}/FINAL_REEL_${DateTime.now().millisecondsSinceEpoch}.mp4';
+  
+  // Get durations
+  videoTime = (await CustomVideoTime.onGet(videoPath) ?? 0).toDouble();
+  final soundTime = (await onGetSoundTime(audioPath) ?? 0);
 
-    if (soundTime != 0 && videoTime != null && videoTime != 0) {
-      final minTime = (videoTime! < soundTime) ? videoTime : soundTime;
-      final command = '-i "$videoPath" -i "$audioPath" -t $minTime -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "$path"';
-      final sessionRemoveAudio = await FFmpegKit.executeAsync(command);
-      Utils.showLog("Merge Video Path => $path");
-      return path;
-    } else {
-      return null;
-    }
+  if (soundTime != 0 && videoTime != 0) {
+    // We take the shorter of the two to avoid black frames or silence
+    final minTime = (videoTime! < soundTime) ? videoTime : soundTime;
+    
+    /* COMMAND EXPLAINED:
+       -i: Inputs
+       -t: Duration limit
+       -map 0:v:0: Take Video from first input (Camera)
+       -map 1:a:0: Take Audio from second input (Music)
+       -c:v copy: Don't re-render video (Super Fast)
+    */
+    final command = '-i "$videoPath" -i "$audioPath" -t $minTime -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -shortest "$path"';
+    
+    await FFmpegKit.execute(command);
+    return path;
   }
+  return null;
+}
 
   Future<void> onClickPreviewButton() async {
     Get.dialog(barrierDismissible: false, const LoadingUi());
