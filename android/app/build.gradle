@@ -27,7 +27,7 @@ if (flutterVersionName == null) {
 android {
     namespace "com.auraapp.live"
     compileSdkVersion 36
-    ndkVersion flutter.ndkVersion
+    ndkVersion "28.0.12433566"
 
     lintOptions {
         checkReleaseBuilds false
@@ -52,9 +52,8 @@ android {
         minSdkVersion 24
         targetSdkVersion 36
         multiDexEnabled true
-        versionCode 37
+        versionCode 38
         versionName "1.0.37"
-        ndkVersion "26.1.10909125"
         ndk {
             abiFilters "armeabi-v7a", "arm64-v8a", "x86_64"
         }
@@ -81,7 +80,7 @@ android {
 
     packaging {
         jniLibs {
-            useLegacyPackaging = true
+            useLegacyPackaging = false
         }
     }
 
@@ -109,6 +108,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-auth'
     implementation 'com.google.firebase:firebase-storage'
+
 
 
 
