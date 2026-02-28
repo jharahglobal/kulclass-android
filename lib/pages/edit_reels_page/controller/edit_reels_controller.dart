@@ -157,76 +157,88 @@ class EditReelsController extends GetxController {
   }
 
   Future<void> onEditUploadReels() async {
-    Utils.showLog("Reels Uploading...");
-    if (InternetConnection.isConnect.value) {
-      Get.dialog(PopScope(canPop: false, child: const LoadingUi()), barrierDismissible: false); // Start Loading...
+  Utils.showLog("Reels Uploading Process Started...");
+  
+  if (InternetConnection.isConnect.value) {
+    // 1. Show Loading Overlay
+    Get.dialog(const PopScope(canPop: false, child: LoadingUi()), barrierDismissible: false);
 
+    try {
+      // 2. Process Hashtags
       List<String> hashTagIds = [];
+      // Clean the caption and identify hashtags
+      String text = captionController.text;
+      List<String> parts = text.split(' ');
+      userInputHashtag = parts.where((element) => element.startsWith('#')).toList();
 
-      for (int index = 0; index < userInputHashtag.length; index++) {
-        final hashTag = userInputHashtag[index];
+      for (var hashTag in userInputHashtag) {
+        if (hashTag.length > 1) {
+          final cleanTagName = hashTag.substring(1);
+          
+          // Check if it exists in our collection
+          final existingTag = hastTagCollection.firstWhereOrNull(
+            (e) => e.hashTag?.toLowerCase() == cleanTagName.toLowerCase()
+          );
 
-        Utils.showLog("----------${hashTag}");
-
-        if (hashTag != "" && hashTag.startsWith("#")) {
-          final searchHashtag = userInputHashtag[index].substring(1);
-          createHashTagModel = null;
-
-          final List<HashTagData> selectedHashTag = hastTagCollection.where((element) => (element.hashTag?.toLowerCase() ?? "") == searchHashtag.toLowerCase()).toList();
-
-          Utils.showLog("**** ${selectedHashTag}");
-
-          if (selectedHashTag.isNotEmpty) {
-            hashTagIds.add(selectedHashTag[0].id ?? "");
-            Utils.showLog("Already Available HashTag => ${selectedHashTag[0].hashTag} ");
+          if (existingTag != null) {
+            hashTagIds.add(existingTag.id ?? "");
           } else {
-            Utils.showLog("New Create HashTag => ${userInputHashtag[index].substring(1)} ");
-
-            createHashTagModel = await CreateHashTagApi.callApi(hashTag: userInputHashtag[index].substring(1));
-
-            if (createHashTagModel?.data?.id != null) {
-              hashTagIds.add(createHashTagModel?.data?.id ?? "");
+            // Create new tag if it doesn't exist
+            var newTag = await CreateHashTagApi.callApi(hashTag: cleanTagName);
+            if (newTag?.data?.id != null) {
+              hashTagIds.add(newTag!.data!.id!);
             }
           }
         }
       }
 
-      Utils.showLog("Hast Tag Id => $hashTagIds");
-
+      // 3. Handle Thumbnail Upload
+      String? finalImageUrl;
       if (selectedImage != null) {
-        final image = await UploadFileApi.callApi(
-          filePath: selectedImage ?? "",
+        // User picked a NEW image
+        finalImageUrl = await UploadFileApi.callApi(
+          filePath: selectedImage!,
           fileType: 2,
-          keyName: "${DateTime.now().millisecondsSinceEpoch}.jpg",
+          keyName: "reels_${DateTime.now().millisecondsSinceEpoch}.jpg",
         );
-        await onCallEditApi(hashTag: hashTagIds.map((e) => "$e").join(',').toString(), image: image);
       } else {
-        await onCallEditApi(hashTag: hashTagIds.map((e) => "$e").join(',').toString(), image: selectedImage);
+        // User kept the ORIGINAL thumbnail (use the existing URL)
+        finalImageUrl = videoThumbnail; 
       }
-    } else {
-      Utils.showToast(EnumLocal.txtConnectionLost.name.tr);
-      Utils.showLog("Internet Connection Lost !!");
+
+      // 4. Call the Edit API
+      await onCallEditApi(
+        hashTag: hashTagIds.join(','), 
+        image: finalImageUrl
+      );
+
+    } catch (e) {
+      Get.back(); // Dismiss loading
+      Utils.showLog("Upload Error: $e");
+      Utils.showToast("Upload failed. Please try again.");
     }
+  } else {
+    Utils.showToast(EnumLocal.txtConnectionLost.name.tr);
   }
+}
 
   Future<void> onCallEditApi({required String hashTag, String? image}) async {
-    editReelsModel = await EditReelsApi.callApi(
-      loginUserId: Database.loginUserId,
-      videoImage: image,
-      videoId: videoId,
-      hashTag: hashTag,
-      caption: captionController.text.trim(),
-    );
+  editReelsModel = await EditReelsApi.callApi(
+    loginUserId: Database.loginUserId,
+    videoImage: image, // Now correctly contains either new upload or old URL
+    videoId: videoId,
+    hashTag: hashTag,
+    caption: captionController.text.trim(),
+  );
 
-    if (editReelsModel?.status == true && editReelsModel?.data?.id != null) {
-      Utils.showToast(EnumLocal.txtReelsUploadSuccessfully.name.tr);
-      Get.close(2);
-    } else if (editReelsModel?.status == false && editReelsModel?.message == "your duration of Video greater than decided by the admin.") {
-      Utils.showToast(editReelsModel?.message ?? "");
-    } else {
-      Utils.showToast(EnumLocal.txtSomeThingWentWrong.name.tr);
-    }
+  Get.back(); // Dismiss loading overlay
 
-    Get.back(); // Stop Loading...
+  if (editReelsModel?.status == true) {
+    Utils.showToast(EnumLocal.txtReelsUploadSuccessfully.name.tr);
+    // Go back to the profile or main feed
+    Get.until((route) => Get.currentRoute == '/MainPage' || route.isFirst); 
+  } else {
+    Utils.showToast(editReelsModel?.message ?? EnumLocal.txtSomeThingWentWrong.name.tr);
   }
+}
 }
