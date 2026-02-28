@@ -150,4 +150,32 @@ class EditReelsView extends StatelessWidget {
       ).paddingSymmetric(horizontal: Get.width / 6.5, vertical: 25),
     );
   }
+
+
+  bottomNavigationBar: GetBuilder<EditReelsController>(
+  id: "onUploadProgress", // ID for showing a loading state during upload
+  builder: (controller) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: Get.width / 6.5, vertical: 25),
+      child: controller.isLoading 
+        ? const LoadingUi() // Show loading spinner when upload is active
+        : AppButtonUi(
+            title: EnumLocal.txtSubmit.name.tr,
+            gradient: AppColor.primaryLinearGradient,
+            callback: () {
+              if (controller.videoPath.isEmpty) {
+                Get.snackbar("Error", "Video file missing");
+                return;
+              }
+              FocusManager.instance.primaryFocus?.unfocus();
+              // REACTIVATED: This triggers the upload logic in the controller
+              controller.onEditUploadReels(); 
+            },
+          ),
+    );
+  }
+),
+
+
+  
 }
