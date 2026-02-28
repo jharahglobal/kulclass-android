@@ -86,33 +86,41 @@ class VideoPickerBottomSheetUi {
             5.height,
 
             // ---------------------------------------------------------
-            // ❌ UPLOAD OPTION COMMENTED OUT
+            // UPLOAD OPTION
             // ---------------------------------------------------------
-            /*
+            
             GestureDetector(
-              onTap: () async {
-                Get.back(); // Close Bottom Sheet...
+                  onTap: () async {
+                    // 1. Close the Bottom Sheet immediately
+                    Get.back(); 
 
-                if (InternetConnection.isConnect.value) {
-                  Get.dialog(const LoadingUi(), barrierDismissible: false); // Start Loading...
+                    if (!InternetConnection.isConnect.value) {
+                      Utils.showToast(EnumLocal.txtConnectionLost.name.tr);
+                      return;
+                    }
 
-                  final videoPath = await CustomVideoPicker.pickVideo(); // Pick Video...
+                    try {
+                      // 2. Start Loading
+                      Get.dialog(const LoadingUi(), barrierDismissible: false);
 
-                  Utils.showLog("Picked Video Path => ${videoPath}");
-                  if (videoPath != null) {
-                    final videoTime = await CustomVideoTime.onGet(videoPath); // Pick Video Time...
+                      // 3. Pick the video
+                      final videoPath = await CustomVideoPicker.pickVideo();
 
-                    Utils.showLog("Picked Video Time => ${videoTime}");
-                    if (videoTime != null) {
-                      final String? videoImage = await CustomThumbnail.onGet(videoPath); // Pick Video Image...
+                      if (videoPath == null || videoPath.isEmpty) {
+                        // User cancelled picking
+                        if (Get.isOverlaysOpen) Get.back(); 
+                        Utils.showLog("Video Selection Cancelled");
+                        return;
+                      }
 
-                      Get.back(); // Stop Loading...
+                      // 4. Gather Metadata
+                      final videoTime = await CustomVideoTime.onGet(videoPath);
+                      final String? videoImage = await CustomThumbnail.onGet(videoPath);
 
-                      if (videoImage != null) {
-                        Utils.showLog("Video Path => ${videoPath}");
-                        Utils.showLog("Video Image => ${videoImage}");
-                        Utils.showLog("Video Time => ${videoTime}");
+                      // 5. Stop Loading before navigating or showing errors
+                      if (Get.isOverlaysOpen) Get.back();
 
+                      if (videoTime != null && videoImage != null) {
                         Get.toNamed(
                           AppRoutes.previewCreatedReelsPage,
                           arguments: {
@@ -124,24 +132,16 @@ class VideoPickerBottomSheetUi {
                         );
                       } else {
                         Utils.showToast(EnumLocal.txtSomeThingWentWrong.name.tr);
-                        Utils.showLog("Get Video Image Failed !!");
-                        Get.back(); // Stop Loading...
+                        Utils.showLog("Metadata extraction failed: Time=$videoTime, Image=$videoImage");
                       }
-                    } else {
+                    } catch (e) {
+                      // Catch-all for unexpected errors (file permissions, etc.)
+                      if (Get.isOverlaysOpen) Get.back();
+                      Utils.showLog("Error during upload process: $e");
                       Utils.showToast(EnumLocal.txtSomeThingWentWrong.name.tr);
-                      Utils.showLog("Get Video Time Failed !!");
-                      Get.back(); // Stop Loading...
                     }
-                  } else {
-                    Utils.showLog("Video Not Selected !!");
-                    Get.back(); // Stop Loading...
-                  }
-                } else {
-                  Utils.showToast(EnumLocal.txtConnectionLost.name.tr);
-                  Utils.showLog("Internet Connection Lost !!");
-                }
-              },
-              child: Container(
+                  },
+                child: Container(
                 height: 55,
                 color: AppColor.transparent,
                 alignment: Alignment.center,
@@ -159,8 +159,8 @@ class VideoPickerBottomSheetUi {
                 ),
               ),
             ),
-            */
-            // ---------------------------------------------------------
+            
+            
 
             // ✅ ONLY CREATE REEL OPTION REMAINS
             GestureDetector(
