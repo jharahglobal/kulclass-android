@@ -42,53 +42,32 @@ class WithOutEffectUi extends StatelessWidget {
       color: AppColor.colorGreyBg,
       child: Stack(
         children: [
-          // ------------------------------------------------
-          // LAYER 1: CAMERA PREVIEW / LOADING / ERROR
-          // ------------------------------------------------
+          // LAYER 1: FIXED CAMERA PREVIEW
           GetBuilder<CreateReelsController>(
             id: "onInitializeCamera",
             builder: (controller) {
-              // 1. Success: Show Camera
-              if (controller.cameraController != null && (controller.cameraController?.value.isInitialized ?? false)) {
-                final mediaSize = MediaQuery.of(context).size;
-                final scale = 1 / (controller.cameraController!.value.aspectRatio * mediaSize.aspectRatio);
+              if (controller.cameraController != null && controller.cameraController!.value.isInitialized) {
+                // Calculation to ensure 9:16 aspect ratio fill without stretching
+                var camera = controller.cameraController!.value;
+                final size = MediaQuery.of(context).size;
+                var scale = size.aspectRatio * camera.aspectRatio;
+                if (scale < 1) scale = 1 / scale;
+
                 return ClipRect(
-                  clipper: _MediaSizeClipper(mediaSize),
-                  child: Transform.scale(
-                    scale: scale,
-                    alignment: Alignment.topCenter,
-                    child: CameraPreview(controller.cameraController!),
-                  ),
-                );
-              }
-              // 2. Error: Show Retry Button (✅ FIXED VARIABLE NAME)
-              else if (controller.isCameraError) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline, color: Colors.red, size: 50),
-                        const SizedBox(height: 10),
-                        Text(
-                          "Camera Error:\n${controller.errorMessage}",
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: () => controller.onGetPermission(),
-                          style: ElevatedButton.styleFrom(backgroundColor: AppColor.primary),
-                          child: const Text("Retry Permission", style: TextStyle(color: Colors.white)),
-                        )
-                      ],
+                  child: Container(
+                    width: size.width,
+                    height: size.height,
+                    child: Transform.scale(
+                      scale: scale,
+                      child: Center(
+                        child: CameraPreview(controller.cameraController!),
+                      ),
                     ),
                   ),
                 );
-              }
-              // 3. Loading: Show Spinner
-              else {
+              } else if (controller.isCameraError) {
+                return _buildErrorUi(controller);
+              } else {
                 return const LoadingUi();
               }
             },
@@ -344,54 +323,19 @@ class WithOutEffectUi extends StatelessWidget {
             bottom: 20,
             child: Container(
               width: Get.width,
-              color: AppColor.transparent,
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: Row(
                 children: [
-                  const Expanded(child: Offstage()),
+                  const Expanded(child: SizedBox()), // Cleaned up Offstage
                   Expanded(
-                    child: Container(
-                      height: 100,
-                      width: 100,
-                      color: AppColor.transparent,
-                      child: Center(
-                        child: GetBuilder<CreateReelsController>(
-                          id: "onChangeRecordingEvent",
-                          builder: (controller) => Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              SizedBox(
-                                height: 73,
-                                width: 73,
-                                child: CircularProgressIndicator(
-                                  value: controller.isRecording == "stop" ? 1 : controller.countTime * (1 / controller.selectedDuration),
-                                  backgroundColor: AppColor.white.withOpacity(0.2),
-                                  color: controller.isRecording == "stop" ? AppColor.white : AppColor.colorTabBar,
-                                  strokeWidth: 8,
-                                  strokeCap: StrokeCap.round,
-                                ),
-                              ),
-                              CircleIconButtonUi(
-                                circleSize: 65,
-                                icon: controller.isRecording == "start" ? AppAsset.icPause : AppAsset.icPlay,
-                                iconSize: 35,
-                                color: AppColor.white,
-                                // Gradient for initial state, White for recording
-                                gradient: controller.isRecording == "stop" ? AppColor.primaryLinearGradient : null, 
-                                iconColor: controller.isRecording == "stop" ? AppColor.white : AppColor.black,
-                                callback: () => controller.onClickRecordingButton(),
-                              )
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                    child: _buildRecordButton(),
                   ),
                   Expanded(
                     child: GetBuilder<CreateReelsController>(
                       id: "onChangeRecordingEvent",
                       builder: (controller) => Visibility(
-                        visible: controller.isRecording != "stop",
+                        // Ensure preview button appears immediately after a recording exists
+                        visible: controller.isRecording != "stop" || controller.recordedVideoPath != null, 
                         child: Align(
                           alignment: Alignment.centerRight,
                           child: GestureDetector(
@@ -419,6 +363,35 @@ class WithOutEffectUi extends StatelessWidget {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+  Widget _buildRecordButton() {
+    return GetBuilder<CreateReelsController>(
+      id: "onChangeRecordingEvent",
+      builder: (controller) => Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            height: 73,
+            width: 73,
+            child: CircularProgressIndicator(
+              value: controller.isRecording == "stop" ? 0 : controller.countTime / controller.selectedDuration,
+              backgroundColor: AppColor.white.withOpacity(0.2),
+              color: AppColor.colorTabBar,
+              strokeWidth: 6,
+            ),
+          ),
+          CircleIconButtonUi(
+            circleSize: 65,
+            icon: controller.isRecording == "start" ? AppAsset.icPause : AppAsset.icPlay,
+            iconSize: 35,
+            color: AppColor.white,
+            gradient: controller.isRecording == "stop" ? AppColor.primaryLinearGradient : null,
+            iconColor: controller.isRecording == "stop" ? AppColor.white : AppColor.black,
+            callback: () => controller.onClickRecordingButton(),
+          )
         ],
       ),
     );
