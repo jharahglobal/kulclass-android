@@ -396,6 +396,29 @@ class WithOutEffectUi extends StatelessWidget {
       ),
     );
   }
+
+// Add this inside class WithOutEffectUi
+  Widget _buildErrorUi(CreateReelsController controller) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.videocam_off, color: AppColor.white, size: 50),
+          10.height,
+          Text(
+            "Camera Error",
+            style: AppFontStyle.styleW700(AppColor.white, 18),
+          ),
+          20.height,
+          AppButtonUi(
+            title: "Try Again",
+            callback: () => controller.initCamera(),
+          ),
+        ],
+      ),
+    );
+  }
+  
 }
 
 class _MediaSizeClipper extends CustomClipper<Rect> {
