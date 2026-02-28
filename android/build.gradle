@@ -1,5 +1,6 @@
 buildscript {
-    ext.kotlin_version = '1.8.22'  // stable version compatible with AGP 8.6.0
+    // Upgrade to 1.9.24 for better compatibility with API 36/AGP 8.6
+    ext.kotlin_version = '1.9.24'  
     repositories {
         google()
         mavenCentral()
@@ -8,6 +9,8 @@ buildscript {
         classpath 'com.android.tools.build:gradle:8.6.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath 'com.google.gms:google-services:4.4.2'
+        // Add Crashlytics if you are using it
+        classpath 'com.google.firebase:firebase-crashlytics-gradle:3.0.2'
     }
 }
 allprojects {
@@ -31,3 +34,4 @@ subprojects {
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
+
