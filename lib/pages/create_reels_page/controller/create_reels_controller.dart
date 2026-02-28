@@ -223,12 +223,16 @@ class CreateReelsController extends GetxController {
       Get.dialog(barrierDismissible: false, const LoadingUi());
       onPauseAudio();
       videoUrl = await cameraController!.stopVideoRecording();
+      
+      // ✅ SAVE TO THE VARIABLE THE VIEW IS WATCHING
+      recordedVideoPath = videoUrl.path; 
+      
       Get.back();
       onChangeRecordingEvent("stop");
       return videoUrl.path;
     } catch (e) {
       onChangeRecordingEvent("stop");
-      Get.back();
+      if (Get.isOverlaysOpen) Get.back();
       return null;
     }
   }
@@ -263,11 +267,14 @@ class CreateReelsController extends GetxController {
      onChangeTimer();
      onStartRecording();
   }
+  // Also update this to ensure the preview button appears after long press
   Future<void> onLongPressEnd(LongPressEndDetails details) async {
-     onChangeRecordingEvent("stop");
-     onChangeTimer();
      final videoPath = await onStopRecording();
-     if (videoPath != null) { onPreviewVideo(videoPath); }
+     if (videoPath != null) { 
+       recordedVideoPath = videoPath; // Ensure it's set
+       update(["onChangeRecordingEvent"]); // Trigger UI update
+       onPreviewVideo(videoPath); 
+     }
   }
 
   Future<void> onChangeTimer() async {
@@ -519,6 +526,6 @@ Future<String?> onMergeAudioWithVideo(String videoPath, String audioPath) async 
   // If it's named 'onInit' or something else, rename it to 'initCamera'
   Future<void> initCamera() async {
     // Your camera initialization logic here...
-    update(["onInitializeCamera"]);
+    await onGetPermission();
   }
 }
