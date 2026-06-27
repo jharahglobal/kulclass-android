@@ -262,21 +262,21 @@ class UploadReelsController extends GetxController {
 
           final LightCompressor lightCompressor = LightCompressor();
           
-          final dynamic response = await lightCompressor.compressVideo(
+          final Result response = await lightCompressor.compressVideo(
             path: videoPath,
             videoQuality: VideoQuality.medium,
             isMinbitrateCheckEnabled: true,
             iosSaveInGallery: false,
           );
 
-          if (response is OnSuccess) {
+          if (response is Success) {
             finalVideoPath = response.destinationPath;
             final compressedSize = File(finalVideoPath).lengthSync();
             Utils.showLog("✅ Video Compressed Successfully!");
             Utils.showLog("Compressed Video Size: ${(compressedSize / (1024 * 1024)).toStringAsFixed(2)} MB");
-          } else if (response is OnFailure) {
+          } else if (response is Failure) {
             Utils.showLog("⚠️ Compression failed: ${response.message}. Proceeding with original file.");
-          } else if (response is OnCancelled) {
+          } else if (response is Animation) {
             Utils.showLog("⚠️ Compression was cancelled. Proceeding with original file.");
           }
         } catch (e) {
