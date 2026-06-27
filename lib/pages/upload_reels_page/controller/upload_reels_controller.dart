@@ -29,8 +29,12 @@ import 'package:auralive/utils/utils.dart';
 import '../model/fetch_ai_caption_model.dart';
 
 class UploadReelsController extends GetxController {
+  
   UploadReelsModel? uploadReelsModel;
   String? videoThumbnailUrl;
+
+  // 1. Locate the top of your UploadReelsController class and add this tracking variable:
+  RxString uploadProgressPercentage = "0%".obs;
 
   int videoTime = 0;
   String videoPath = "";
@@ -247,26 +251,53 @@ class UploadReelsController extends GetxController {
     );
   }
 
+
+
+// 2. Locate your onUploadReels() method and replace it completely with this progress-aware architecture:
   Future<void> onUploadReels() async {
     Utils.showLog("Reels Uploading Process Started...");
     if (InternetConnection.isConnect.value) {
-      Get.dialog(PopScope(canPop: false, child: const LoadingUi()), barrierDismissible: false);
+      // Reset progress indicator metric
+      uploadProgressPercentage.value = "0%";
+      
+      // Open dialog using Obx so it dynamically redraws when progress changes
+      Get.dialog(
+        PopScope(
+          canPop: false, 
+          child: AlertDialog(
+            backgroundColor: AppColor.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CupertinoActivityIndicator(radius: 15),
+                const SizedBox(height: 15),
+                Obx(() => Text(
+                  "Uploading: ${uploadProgressPercentage.value}",
+                  style: AppFontStyle.styleW600(AppColor.black, 15),
+                )),
+              ],
+            ),
+          )
+        ), 
+        barrierDismissible: false
+      );
 
       String finalVideoPath = videoPath;
 
       // --- VIDEO COMPRESSION START ---
-   // --- VIDEO COMPRESSION START ---
       if (videoPath.isNotEmpty && File(videoPath).existsSync()) {
         try {
           final originalSize = File(videoPath).lengthSync();
           Utils.showLog("Original Video Size: ${(originalSize / (1024 * 1024)).toStringAsFixed(2)} MB");
 
-          // Open a loading dialog that tells the user compression is active
-          Utils.showLog("⚙️ Starting Video Compression via video_compress...");
+          // Explicitly updating dialog text state context
+          uploadProgressPercentage.value = "Compressing...";
           
+          // Use background processing configuration safely
           final MediaInfo? mediaInfo = await VideoCompress.compressVideo(
             videoPath,
-            quality: VideoQuality.DefaultQuality, // Balanced compression optimization
+            quality: VideoQuality.DefaultQuality,
             deleteOrigin: false, 
             includeAudio: true,
           );
@@ -284,7 +315,6 @@ class UploadReelsController extends GetxController {
         }
       }
       // --- VIDEO COMPRESSION END ---
-      // --- VIDEO COMPRESSION END ---
 
       List<String> hashTagIds = [];
       for (int index = 0; index < userInputHashtag.length; index++) {
@@ -295,7 +325,6 @@ class UploadReelsController extends GetxController {
           final List<HashTagData> selectedHashTag = hastTagCollection.where((element) => (element.hashTag?.toLowerCase() ?? "") == searchHashtag.toLowerCase()).toList();
 
           if (selectedHashTag.isNotEmpty) {
-            // Access the first matched item from the filtered list safely
             hashTagIds.add(selectedHashTag.first.id ?? "");
           } else {
             createHashTagModel = await CreateHashTagApi.callApi(hashTag: userInputHashtag[index].substring(1));
@@ -310,11 +339,15 @@ class UploadReelsController extends GetxController {
         uploadReelsModel = await UploadReelsApi.callApi(
           loginUserId: Database.loginUserId,
           videoImage: videoThumbnailUrl ?? "",
-          videoUrl: finalVideoPath, // ✅ Uses compressed path
+          videoUrl: finalVideoPath,
           videoTime: videoTime.toString(),
           hashTag: hashTagIds.map((e) => "$e").join(',').toString(),
           caption: captionController.text.trim(),
           songId: songId,
+          // Pass a custom tracking callback directly down into our Dio stream engine!
+          onProgressUpdate: (progressString) {
+            uploadProgressPercentage.value = progressString;
+          }
         );
       } else {
         Utils.showLog("❌ FAIL: Thumb: $videoThumbnailUrl, Path: $finalVideoPath");
@@ -326,11 +359,12 @@ class UploadReelsController extends GetxController {
         Utils.showToast(EnumLocal.txtReelsUploadSuccessfully.name.tr);
         Get.close(2);
       } else if (uploadReelsModel?.status == false && uploadReelsModel?.message == "your duration of Video greater than decided by the admin.") {
+        Get.back(); // Dismiss progress dialog safely
         Utils.showToast(uploadReelsModel?.message ?? "");
       } else {
+        Get.back(); // Dismiss progress dialog safely
         Utils.showToast(EnumLocal.txtSomeThingWentWrong.name.tr);
       }
-      Get.back();
     } else {
       Utils.showToast(EnumLocal.txtConnectionLost.name.tr);
     }
