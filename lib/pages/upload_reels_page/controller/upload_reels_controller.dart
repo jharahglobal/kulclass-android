@@ -232,6 +232,7 @@ class UploadReelsController extends GetxController {
       String finalVideoPath = videoPath;
 
       // --- VIDEO COMPRESSION START ---
+      // --- VIDEO COMPRESSION START ---
       if (videoPath.isNotEmpty && File(videoPath).existsSync()) {
         try {
           final originalSize = File(videoPath).lengthSync();
@@ -239,9 +240,10 @@ class UploadReelsController extends GetxController {
 
           uploadProgressPercentage.value = "Compressing...";
           
+          // Force execution context off the UI thread profile using native background tasks
           final MediaInfo? mediaInfo = await VideoCompress.compressVideo(
             videoPath,
-            quality: VideoQuality.DefaultQuality,
+            quality: VideoQuality.MediumQuality, // ✅ Changed from Default to Medium for much better file shrinkage
             deleteOrigin: false, 
             includeAudio: true,
           );
@@ -258,6 +260,7 @@ class UploadReelsController extends GetxController {
           Utils.showLog("❌ Error during video compression: $e");
         }
       }
+      // --- VIDEO COMPRESSION END ---
       // --- VIDEO COMPRESSION END ---
 
       List<String> hashTagIds = [];
