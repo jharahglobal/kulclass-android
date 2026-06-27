@@ -4,11 +4,10 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart'; // Provides XFile
-// ✅ IMPORT
+import 'package:image_picker/image_picker.dart'; 
 import 'package:video_compress/video_compress.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart'; 
-import 'package:path_provider/path_provider.dart';     
+import 'package:path_provider/path_provider.dart';      
 
 import 'package:auralive/custom/custom_image_picker.dart';
 import 'package:auralive/pages/preview_hash_tag_page/api/create_hash_tag_api.dart';
@@ -16,7 +15,6 @@ import 'package:auralive/pages/preview_hash_tag_page/api/fetch_hash_tag_api.dart
 import 'package:auralive/pages/preview_hash_tag_page/model/create_hash_tag_model.dart';
 import 'package:auralive/pages/preview_hash_tag_page/model/fetch_hash_tag_model.dart';
 import 'package:auralive/pages/profile_page/api/delete_content_api.dart';
-import 'package:auralive/pages/upload_reels_page/api/fetch_ai_caption_api.dart';
 import 'package:auralive/pages/upload_reels_page/api/upload_reels_api.dart';
 import 'package:auralive/pages/upload_reels_page/model/upload_reels_model.dart';
 import 'package:auralive/ui/image_picker_bottom_sheet_ui.dart';
@@ -25,16 +23,12 @@ import 'package:auralive/utils/database.dart';
 import 'package:auralive/utils/enums.dart';
 import 'package:auralive/utils/internet_connection.dart';
 import 'package:auralive/utils/utils.dart';
-
-import '../model/fetch_ai_caption_model.dart';
+import 'package:auralive/utils/color.dart';      
+import 'package:auralive/utils/font_style.dart'; 
 
 class UploadReelsController extends GetxController {
-  
   UploadReelsModel? uploadReelsModel;
   String? videoThumbnailUrl;
-
-  // 1. Locate the top of your UploadReelsController class and add this tracking variable:
-  RxString uploadProgressPercentage = "0%".obs;
 
   int videoTime = 0;
   String videoPath = "";
@@ -53,12 +47,8 @@ class UploadReelsController extends GetxController {
   RxBool isShowHashTag = false.obs;
   List<String> userInputHashtag = [];
 
-  FetchAiCaptionModel? fetchAiCaptionModel;
-  bool isLoadingAiCaption = false;
-
-  bool isAiCaptionSwitchOn = false;
-
   bool isVideoUploadSuccess = false;
+  RxString uploadProgressPercentage = "0%".obs;
 
   @override
   void onInit() {
@@ -83,9 +73,6 @@ class UploadReelsController extends GetxController {
     videoTime = arguments["time"] ?? 0;
     songId = arguments["songId"] ?? "";
 
-    // -----------------------------------------------------------
-    // ✅ FIX: Correct Implementation for get_thumbnail_video
-    // -----------------------------------------------------------
     if (videoPath.isNotEmpty) {
       bool isThumbValid = false;
       if (videoThumbnail.isNotEmpty) {
@@ -95,8 +82,6 @@ class UploadReelsController extends GetxController {
       if (!isThumbValid) {
         Utils.showLog("⚠️ Thumbnail missing. Generating with VideoThumbnail...");
         try {
-          // ✅ FIX 1: Removed 'imageFormat' (defaults to JPEG)
-          // ✅ FIX 2: Handle 'XFile' return type instead of String
           final thumbFile = await VideoThumbnail.thumbnailFile(
             video: videoPath,
             thumbnailPath: (await getTemporaryDirectory()).path,
@@ -104,7 +89,6 @@ class UploadReelsController extends GetxController {
             quality: 75,
           );
 
-          // Extract path safely
           if (thumbFile != null && thumbFile.path.isNotEmpty) {
             videoThumbnail = thumbFile.path;
             Utils.showLog("✅ New Thumbnail Generated: $videoThumbnail");
@@ -116,45 +100,12 @@ class UploadReelsController extends GetxController {
         }
       }
     }
-    // -----------------------------------------------------------
 
     onGetHashTag();
     Utils.showLog("Selected Song Id => $songId");
-    onConvertVideoThumbnail();
-  }
-
-  Future<void> onConvertVideoThumbnail() async {
+    
     videoThumbnailUrl = videoThumbnail;
     update(["onChangeThumbnail"]);
-
-    if (isAiCaptionSwitchOn) onFetchAiCaption();
-  }
-
-  void onChangeAiSwitch({bool? value}) async {
-    isAiCaptionSwitchOn = value ?? !isAiCaptionSwitchOn;
-    update(["onChangeAiSwitch"]);
-
-    if (isAiCaptionSwitchOn) {
-      onFetchAiCaption();
-    } else {
-      captionController.clear();
-      update(["onGenerateAiCaption"]);
-    }
-  }
-
-  void onFetchAiCaption() async {
-    if (videoThumbnailUrl?.trim().isNotEmpty == true) {
-      isLoadingAiCaption = true;
-      update(["onGenerateAiCaption"]);
-
-      fetchAiCaptionModel = await FetchAiCaptionApi.callApi(contentUrl: videoThumbnailUrl ?? "");
-
-      captionController.clear();
-      captionController.text = ((fetchAiCaptionModel?.caption ?? "") + (fetchAiCaptionModel?.hashtags?.join(" ") ?? ""));
-
-      isLoadingAiCaption = false;
-      update(["onGenerateAiCaption"]);
-    }
   }
 
   void onCancelVideoContent() {
@@ -236,31 +187,26 @@ class UploadReelsController extends GetxController {
         final imagePath = await CustomImagePicker.pickImage(ImageSource.camera);
         if (imagePath != null) {
           videoThumbnail = imagePath;
+          videoThumbnailUrl = videoThumbnail;
           update(["onChangeThumbnail"]);
-          onConvertVideoThumbnail();
         }
       },
       onClickGallery: () async {
         final imagePath = await CustomImagePicker.pickImage(ImageSource.gallery);
         if (imagePath != null) {
           videoThumbnail = imagePath;
+          videoThumbnailUrl = videoThumbnail;
           update(["onChangeThumbnail"]);
-          onConvertVideoThumbnail();
         }
       },
     );
   }
 
-
-
-// 2. Locate your onUploadReels() method and replace it completely with this progress-aware architecture:
   Future<void> onUploadReels() async {
     Utils.showLog("Reels Uploading Process Started...");
     if (InternetConnection.isConnect.value) {
-      // Reset progress indicator metric
       uploadProgressPercentage.value = "0%";
       
-      // Open dialog using Obx so it dynamically redraws when progress changes
       Get.dialog(
         PopScope(
           canPop: false, 
@@ -291,10 +237,8 @@ class UploadReelsController extends GetxController {
           final originalSize = File(videoPath).lengthSync();
           Utils.showLog("Original Video Size: ${(originalSize / (1024 * 1024)).toStringAsFixed(2)} MB");
 
-          // Explicitly updating dialog text state context
           uploadProgressPercentage.value = "Compressing...";
           
-          // Use background processing configuration safely
           final MediaInfo? mediaInfo = await VideoCompress.compressVideo(
             videoPath,
             quality: VideoQuality.DefaultQuality,
@@ -344,7 +288,6 @@ class UploadReelsController extends GetxController {
           hashTag: hashTagIds.map((e) => "$e").join(',').toString(),
           caption: captionController.text.trim(),
           songId: songId,
-          // Pass a custom tracking callback directly down into our Dio stream engine!
           onProgressUpdate: (progressString) {
             uploadProgressPercentage.value = progressString;
           }
@@ -359,10 +302,10 @@ class UploadReelsController extends GetxController {
         Utils.showToast(EnumLocal.txtReelsUploadSuccessfully.name.tr);
         Get.close(2);
       } else if (uploadReelsModel?.status == false && uploadReelsModel?.message == "your duration of Video greater than decided by the admin.") {
-        Get.back(); // Dismiss progress dialog safely
+        Get.back(); 
         Utils.showToast(uploadReelsModel?.message ?? "");
       } else {
-        Get.back(); // Dismiss progress dialog safely
+        Get.back(); 
         Utils.showToast(EnumLocal.txtSomeThingWentWrong.name.tr);
       }
     } else {
