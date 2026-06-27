@@ -35,3 +35,17 @@ tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
 
+
+// Add this block at the very end of your android/build.gradle file
+subprojects { subproject ->
+    afterEvaluate {
+        if (subproject.plugins.hasPlugin('com.android.library') || subproject.plugins.hasPlugin('com.android.application')) {
+            if (subproject.name == 'light_compressor') {
+                android {
+                    // Injecting the missing namespace required by AGP 8+
+                    namespace "com.abedelazizshehadeh.light_compressor"
+                }
+            }
+        }
+    }
+}
