@@ -29,7 +29,8 @@ class UploadReelsApi {
 
       // Forgiving connection setups for processing larger objects over mobile cells safely
       dio.options.connectTimeout = const Duration(minutes: 5);
-      dio.options.receiveTimeout = const Duration(minutes: 10);
+      dio.options.sendTimeout = const Duration(minutes: 20);    // ✅ Increased to 20 minutes to prevent premature failure during large data streaming
+      dio.options.receiveTimeout = const Duration(minutes: 20); // ✅ Increased to 20 minutes to give server time to write file to disk
 
       final Map<String, dynamic> formDataMap = {
         'caption': caption,
@@ -37,6 +38,7 @@ class UploadReelsApi {
         'videoTime': videoTime,
         'videoUrl': await dio_lib.MultipartFile.fromFile(
           videoUrl,
+          filename: videoUrl.split('/').last, // ✅ Explicitly attached file name string parameter
           contentType: dio_lib.DioMediaType('video', 'mp4'),
         ),
       };
@@ -48,6 +50,7 @@ class UploadReelsApi {
       if (videoImage.isNotEmpty && await File(videoImage).exists()) {
         formDataMap['videoImage'] = await dio_lib.MultipartFile.fromFile(
           videoImage,
+          filename: videoImage.split('/').last, // ✅ Explicitly attached file name string parameter
           contentType: dio_lib.DioMediaType('image', 'jpeg'),
         );
       }
@@ -83,7 +86,7 @@ class UploadReelsApi {
       if (e.response?.statusCode == 413) {
         Utils.showLog("❌ ERROR: File too large (413). Check backend / Nginx client_max_body_size config.");
       } else {
-        Utils.showLog("❌ Dio Network Exception => ${e.message}");
+        Utils.showLog("❌ Dio Network Exception => ${e.type} - ${e.message}");
       }
       return null;
     } catch (e) {
