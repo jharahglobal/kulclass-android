@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart'; // Provides XFile
 // ✅ IMPORT
-import 'package:light_compressor/light_compressor.dart';
+import 'package:video_compress/video_compress.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart'; 
 import 'package:path_provider/path_provider.dart';     
 
@@ -255,34 +255,35 @@ class UploadReelsController extends GetxController {
       String finalVideoPath = videoPath;
 
       // --- VIDEO COMPRESSION START ---
+   // --- VIDEO COMPRESSION START ---
       if (videoPath.isNotEmpty && File(videoPath).existsSync()) {
         try {
           final originalSize = File(videoPath).lengthSync();
           Utils.showLog("Original Video Size: ${(originalSize / (1024 * 1024)).toStringAsFixed(2)} MB");
 
-          final LightCompressor lightCompressor = LightCompressor();
+          // Open a loading dialog that tells the user compression is active
+          Utils.showLog("⚙️ Starting Video Compression via video_compress...");
           
-          final Result response = await lightCompressor.compressVideo(
-            path: videoPath,
-            videoQuality: VideoQuality.medium,
-            isMinbitrateCheckEnabled: true,
-            iosSaveInGallery: false,
+          final MediaInfo? mediaInfo = await VideoCompress.compressVideo(
+            videoPath,
+            quality: VideoQuality.DefaultQuality, // Balanced compression optimization
+            deleteOrigin: false, 
+            includeAudio: true,
           );
 
-          if (response is Success) {
-            finalVideoPath = response.destinationPath;
+          if (mediaInfo != null && mediaInfo.path != null) {
+            finalVideoPath = mediaInfo.path!;
             final compressedSize = File(finalVideoPath).lengthSync();
             Utils.showLog("✅ Video Compressed Successfully!");
             Utils.showLog("Compressed Video Size: ${(compressedSize / (1024 * 1024)).toStringAsFixed(2)} MB");
-          } else if (response is Failure) {
-            Utils.showLog("⚠️ Compression failed: ${response.message}. Proceeding with original file.");
-          } else if (response is Animation) {
-            Utils.showLog("⚠️ Compression was cancelled. Proceeding with original file.");
+          } else {
+            Utils.showLog("⚠️ Compression returned empty media information. Using original file.");
           }
         } catch (e) {
           Utils.showLog("❌ Error during video compression: $e");
         }
       }
+      // --- VIDEO COMPRESSION END ---
       // --- VIDEO COMPRESSION END ---
 
       List<String> hashTagIds = [];
