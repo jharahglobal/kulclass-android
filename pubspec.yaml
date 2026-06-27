@@ -67,7 +67,7 @@ dependencies:
   webview_flutter_android: ^4.7.0
   file_picker: ^8.0.0
   flutter_local_notifications: ^19.3.0
-  light_compressor: ^2.2.0
+  video_compress: ^3.1.2
   dio: ^5.8.0+1
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.0.1
