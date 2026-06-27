@@ -107,26 +107,6 @@ class UploadReelsView extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Row(
-                    children: [
-                      Text(
-                        "Auto Caption",
-                        style: AppFontStyle.styleW700(AppColor.colorTextGrey, 12),
-                      ),
-                      0.width,
-                      GetBuilder<UploadReelsController>(
-                        id: "onChangeAiSwitch",
-                        builder: (controller) => Transform.scale(
-                          scale: 0.6,
-                          child: CupertinoSwitch(
-                            value: controller.isAiCaptionSwitchOn,
-                            activeColor: AppColor.primary,
-                            onChanged: (value) => controller.onChangeAiSwitch(),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -140,60 +120,35 @@ class UploadReelsView extends StatelessWidget {
                 );
               },
               child: GetBuilder<UploadReelsController>(
-                id: "onGenerateAiCaption",
-                builder: (controller) => GetBuilder<UploadReelsController>(
-                  id: "onChangeHashtag",
-                  builder: (controller) => Container(
-                    height: 130,
-                    width: Get.width,
-                    padding: const EdgeInsets.only(left: 15, top: 5),
-                    margin: EdgeInsets.symmetric(horizontal: 15),
-                    decoration: BoxDecoration(
-                      color: AppColor.colorBorder.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColor.colorBorder.withOpacity(0.8)),
-                    ),
-                    child: controller.isLoadingAiCaption
-                        ? CaptionShimmerUi()
-                        : Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: SingleChildScrollView(
-                                  child: controller.captionController.text.isNotEmpty
-                                      ? RichText(
-                                          text: TextSpan(
-                                            children: _buildTextSpans(controller.captionController.text),
-                                          ),
-                                        )
-                                      : Text(
-                                          EnumLocal.txtEnterYourTextWithHashtag.name.tr,
-                                          style: AppFontStyle.styleW400(AppColor.coloGreyText, 15),
-                                        ),
+                id: "onChangeHashtag",
+                builder: (controller) => Container(
+                  height: 130,
+                  width: Get.width,
+                  padding: const EdgeInsets.only(left: 15, top: 5),
+                  margin: EdgeInsets.symmetric(horizontal: 15),
+                  decoration: BoxDecoration(
+                    color: AppColor.colorBorder.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColor.colorBorder.withOpacity(0.8)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: controller.captionController.text.isNotEmpty
+                              ? RichText(
+                                  text: TextSpan(
+                                    children: _buildTextSpans(controller.captionController.text),
+                                  ),
+                                )
+                              : Text(
+                                  EnumLocal.txtEnterYourTextWithHashtag.name.tr,
+                                  style: AppFontStyle.styleW400(AppColor.coloGreyText, 15),
                                 ),
-                              ),
-                              GetBuilder<UploadReelsController>(
-                                id: "onChangeAiSwitch",
-                                builder: (controller) => controller.isAiCaptionSwitchOn
-                                    ? GestureDetector(
-                                        onTap: () => controller.onFetchAiCaption(),
-                                        child: Container(
-                                          height: 30,
-                                          width: 40,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: AppColor.transparent,
-                                          ),
-                                          child: Icon(
-                                            Icons.refresh_outlined,
-                                            weight: 25,
-                                          ),
-                                        ),
-                                      )
-                                    : Offstage(),
-                              ),
-                            ],
-                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
