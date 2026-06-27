@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart'; // Provides XFile
 // ✅ IMPORT
+import 'package:light_compressor/light_compressor.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart'; 
 import 'package:path_provider/path_provider.dart';     
 
@@ -247,9 +248,42 @@ class UploadReelsController extends GetxController {
   }
 
   Future<void> onUploadReels() async {
-    Utils.showLog("Reels Uploading...");
+    Utils.showLog("Reels Uploading Process Started...");
     if (InternetConnection.isConnect.value) {
       Get.dialog(PopScope(canPop: false, child: const LoadingUi()), barrierDismissible: false);
+
+      String finalVideoPath = videoPath;
+
+      // --- VIDEO COMPRESSION START ---
+      if (videoPath.isNotEmpty && File(videoPath).existsSync()) {
+        try {
+          final originalSize = File(videoPath).lengthSync();
+          Utils.showLog("Original Video Size: ${(originalSize / (1024 * 1024)).toStringAsFixed(2)} MB");
+
+          final LightCompressor lightCompressor = LightCompressor();
+          
+          final dynamic response = await lightCompressor.compressVideo(
+            path: videoPath,
+            videoQuality: VideoQuality.medium,
+            isMinbitrateCheckEnabled: true,
+            iosSaveInGallery: false,
+          );
+
+          if (response is OnSuccess) {
+            finalVideoPath = response.destinationPath;
+            final compressedSize = File(finalVideoPath).lengthSync();
+            Utils.showLog("✅ Video Compressed Successfully!");
+            Utils.showLog("Compressed Video Size: ${(compressedSize / (1024 * 1024)).toStringAsFixed(2)} MB");
+          } else if (response is OnFailure) {
+            Utils.showLog("⚠️ Compression failed: ${response.message}. Proceeding with original file.");
+          } else if (response is OnCancelled) {
+            Utils.showLog("⚠️ Compression was cancelled. Proceeding with original file.");
+          }
+        } catch (e) {
+          Utils.showLog("❌ Error during video compression: $e");
+        }
+      }
+      // --- VIDEO COMPRESSION END ---
 
       List<String> hashTagIds = [];
       for (int index = 0; index < userInputHashtag.length; index++) {
@@ -260,7 +294,7 @@ class UploadReelsController extends GetxController {
           final List<HashTagData> selectedHashTag = hastTagCollection.where((element) => (element.hashTag?.toLowerCase() ?? "") == searchHashtag.toLowerCase()).toList();
 
           if (selectedHashTag.isNotEmpty) {
-            hashTagIds.add(selectedHashTag[0].id ?? "");
+            hashTagIds.add(selectedHashTag.id ?? "");
           } else {
             createHashTagModel = await CreateHashTagApi.callApi(hashTag: userInputHashtag[index].substring(1));
             if (createHashTagModel?.data?.id != null) {
@@ -270,18 +304,18 @@ class UploadReelsController extends GetxController {
         }
       }
 
-      if (videoThumbnailUrl != null && videoThumbnailUrl!.isNotEmpty && videoPath.isNotEmpty) {
+      if (videoThumbnailUrl != null && videoThumbnailUrl!.isNotEmpty && finalVideoPath.isNotEmpty) {
         uploadReelsModel = await UploadReelsApi.callApi(
           loginUserId: Database.loginUserId,
           videoImage: videoThumbnailUrl ?? "",
-          videoUrl: videoPath,
+          videoUrl: finalVideoPath, // ✅ Uses compressed path
           videoTime: videoTime.toString(),
           hashTag: hashTagIds.map((e) => "$e").join(',').toString(),
           caption: captionController.text.trim(),
           songId: songId,
         );
       } else {
-        Utils.showLog("❌ FAIL: Thumb: $videoThumbnailUrl, Path: $videoPath");
+        Utils.showLog("❌ FAIL: Thumb: $videoThumbnailUrl, Path: $finalVideoPath");
         Utils.showToast(EnumLocal.txtSomeThingWentWrong.name.tr);
       }
 
