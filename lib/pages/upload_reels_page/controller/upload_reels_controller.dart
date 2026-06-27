@@ -295,7 +295,8 @@ class UploadReelsController extends GetxController {
           final List<HashTagData> selectedHashTag = hastTagCollection.where((element) => (element.hashTag?.toLowerCase() ?? "") == searchHashtag.toLowerCase()).toList();
 
           if (selectedHashTag.isNotEmpty) {
-            hashTagIds.add(selectedHashTag.id ?? "");
+            // Access the first matched item from the filtered list safely
+            hashTagIds.add(selectedHashTag.first.id ?? "");
           } else {
             createHashTagModel = await CreateHashTagApi.callApi(hashTag: userInputHashtag[index].substring(1));
             if (createHashTagModel?.data?.id != null) {
