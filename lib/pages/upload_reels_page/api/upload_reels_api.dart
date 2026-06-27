@@ -1,7 +1,6 @@
 import 'dart:convert';
-import 'dart:io'; // ✅ Added for File check
-import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart'; // ✅ Required for MediaType
+import 'dart:io';
+import 'package:dio/dio.dart' as dio_lib; // Use prefix to avoid conflicts
 import 'package:auralive/pages/upload_reels_page/model/upload_reels_model.dart';
 import 'package:auralive/utils/api.dart';
 import 'package:auralive/utils/utils.dart';
@@ -16,7 +15,7 @@ class UploadReelsApi {
     required String caption,
     required String songId,
   }) async {
-    Utils.showLog("🚀 Upload Reels Api Started...");
+    Utils.showLog("🚀 Upload Reels Api Started via Optimized Stream...");
     Utils.showLog("   📍 Video Path: $videoUrl");
     Utils.showLog("   📍 Thumb Path: $videoImage");
 
@@ -28,63 +27,76 @@ class UploadReelsApi {
     }
 
     try {
-      final uri = Uri.parse("${Api.uploadReels}?userId=$loginUserId");
-      var request = http.MultipartRequest('POST', uri);
+      final dio = dio_lib.Dio();
 
-      // 2. Add Headers
-      request.headers.addAll({
-        "key": Api.secretKey,
-      });
+      // Configure timeouts to be forgiving on slower network speeds for large files
+      dio.options.connectTimeout = const Duration(minutes: 2);
+      dio.options.receiveTimeout = const Duration(minutes: 5);
 
-      // 3. Add Text Fields
-      request.fields['caption'] = caption;
-      request.fields['hashTagId'] = hashTag;
-      request.fields['videoTime'] = videoTime;
+      // 2. Prepare Form Data with Multipart Stream
+      final Map<String, dynamic> formDataMap = {
+        'caption': caption,
+        'hashTagId': hashTag,
+        'videoTime': videoTime,
+        'videoUrl': await dio_lib.MultipartFile.fromFile(
+          videoUrl,
+          contentType: dio_lib.DioMediaType('video', 'mp4'),
+        ),
+      };
+
       if (songId.isNotEmpty) {
-        request.fields['songId'] = songId;
+        formDataMap['songId'] = songId;
       }
 
-      // 4. Add Video File (Crucial Step)
-      // We explicitly set the content type to 'video/mp4' to ensure server acceptance
-      var videoStream = await http.MultipartFile.fromPath(
-        'videoUrl', // Field name expected by backend
-        videoUrl,
-        contentType: MediaType('video', 'mp4'), 
-      );
-      request.files.add(videoStream);
-      Utils.showLog("   ✅ Video File Attached (${videoStream.length} bytes)");
-
-      // 5. Add Thumbnail File
-      if (videoImage.isNotEmpty) {
-        var imageStream = await http.MultipartFile.fromPath(
-          'videoImage', // Field name expected by backend
+      if (videoImage.isNotEmpty && await File(videoImage).exists()) {
+        formDataMap['videoImage'] = await dio_lib.MultipartFile.fromFile(
           videoImage,
-          contentType: MediaType('image', 'jpeg'),
+          contentType: dio_lib.DioMediaType('image', 'jpeg'),
         );
-        request.files.add(imageStream);
         Utils.showLog("   ✅ Image File Attached");
       }
 
-      // 6. Send Request
-      Utils.showLog("⏳ Sending Request to Server...");
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
+      final formData = dio_lib.FormData.fromMap(formDataMap);
+
+      // 3. Send Request with Natively Streamed Chunk Buffering
+      Utils.showLog("⏳ Streaming chunks to Server...");
+      final response = await dio.post(
+        "${Api.uploadReels}?userId=$loginUserId",
+        data: formData,
+        options: dio_lib.Options(
+          headers: {
+            "key": Api.secretKey,
+          },
+          responseType: dio_lib.ResponseType.json,
+        ),
+        onSendProgress: (sent, total) {
+          if (total != -1) {
+            double progress = (sent / total) * 100;
+            Utils.showLog("📤 Uploading: ${progress.toStringAsFixed(1)}%");
+          }
+        },
+      );
 
       Utils.showLog("📡 Status Code: ${response.statusCode}");
       
       if (response.statusCode == 200) {
-        final jsonResult = jsonDecode(response.body);
-        Utils.showLog("✅ Upload Success: ${jsonResult}");
+        // Dio automatically parses JSON string responses into Maps
+        final jsonResult = response.data is String ? jsonDecode(response.data) : response.data;
+        Utils.showLog("✅ Upload Success: $jsonResult");
         return UploadReelsModel.fromJson(jsonResult);
-      } else if (response.statusCode == 413) {
-        Utils.showLog("❌ ERROR: File too large (413). Check Nginx Config.");
-        return null;
       } else {
-        Utils.showLog("❌ Upload Failed: ${response.body}");
+        Utils.showLog("❌ Upload Failed Status: ${response.statusCode}");
         return null;
       }
+    } on dio_lib.DioException catch (e) {
+      if (e.response?.statusCode == 413) {
+        Utils.showLog("❌ ERROR: File too large (413). Check backend / Nginx client_max_body_size config.");
+      } else {
+        Utils.showLog("❌ Dio Network Exception => ${e.message} | Response: ${e.response?.data}");
+      }
+      return null;
     } catch (e) {
-      Utils.showLog("❌ Upload Exception => $e");
+      Utils.showLog("❌ Upload General Exception => $e");
       return null;
     }
   }
