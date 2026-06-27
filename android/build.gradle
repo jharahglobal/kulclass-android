@@ -36,16 +36,24 @@ tasks.register("clean", Delete) {
 }
 
 
-// Add this block at the very end of your android/build.gradle file
+// Lifecycle-safe namespace injection for AGP 8+ compatibility
 subprojects { subproject ->
-    afterEvaluate {
+    def configureNamespace = {
         if (subproject.plugins.hasPlugin('com.android.library') || subproject.plugins.hasPlugin('com.android.application')) {
             if (subproject.name == 'light_compressor') {
-                android {
-                    // Injecting the missing namespace required by AGP 8+
+                subproject.android {
                     namespace "com.abedelazizshehadeh.light_compressor"
                 }
             }
+        }
+    }
+
+    // If already evaluated due to evaluationDependsOn, execute immediately
+    if (subproject.state.executed) {
+        configureNamespace()
+    } else {
+        subproject.afterEvaluate {
+            configureNamespace()
         }
     }
 }
