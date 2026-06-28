@@ -139,7 +139,7 @@ class UploadReelsController extends GetxController {
     words.removeLast();
     captionController.text = words.join(' ');
     captionController.text = captionController.text + ' ' + ("#${filterHashtag[index].hashTag} ");
-    captionController.selection = TextSelection.fromPosition(TextSelection.fromPosition(captionController.text.length));
+    captionController.selection = TextSelection.fromPosition(TextPosition(offset: captionController.text.length));
     isShowHashTag.value = false;
     update(["onChangeHashtag"]);
   }
@@ -156,7 +156,7 @@ class UploadReelsController extends GetxController {
     }
     captionController.text = words.join(' ');
     captionController.selection = TextSelection.fromPosition(
-      TextSelection.fromPosition(captionController.text.length),
+      TextPosition(offset: captionController.text.length),
     );
 
     String updatedText = captionController.text;
@@ -242,8 +242,8 @@ class UploadReelsController extends GetxController {
           final originalSize = File(videoPath).lengthSync();
           Utils.showLog("Original Video Size: ${(originalSize / (1024 * 1024)).toStringAsFixed(2)} MB");
 
-          // Listen directly to the compression stream buffer update loops
-          _compressionSubscription = VideoCompress.compressProgress.listen((progress) {
+          // Listen directly to the compression stream buffer update loops using correct getter
+          _compressionSubscription = VideoCompress.compressStream.listen((progress) {
             uploadProgressPercentage.value = "Compressing: ${progress.toStringAsFixed(0)}%";
           });
           
