@@ -242,8 +242,8 @@ class UploadReelsController extends GetxController {
           final originalSize = File(videoPath).lengthSync();
           Utils.showLog("Original Video Size: ${(originalSize / (1024 * 1024)).toStringAsFixed(2)} MB");
 
-          // Listen directly to the compression stream buffer update loops using correct getter
-          _compressionSubscription = VideoCompress.compressStream.listen((progress) {
+          // ✅ Correct implementation using the package's native observable stream listener
+          _compressionSubscription = VideoCompress.compressProgress$.subscribe((progress) {
             uploadProgressPercentage.value = "Compressing: ${progress.toStringAsFixed(0)}%";
           });
           
