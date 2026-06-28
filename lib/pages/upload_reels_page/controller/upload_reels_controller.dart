@@ -49,6 +49,9 @@ class UploadReelsController extends GetxController {
 
   bool isVideoUploadSuccess = false;
   RxString uploadProgressPercentage = "0%".obs;
+  
+  // Subscription handler tracking compression metrics out-of-thread
+  Subscription? _compressionSubscription;
 
   @override
   void onInit() {
@@ -59,6 +62,7 @@ class UploadReelsController extends GetxController {
 
   @override
   void onClose() {
+    _compressionSubscription?.unsubscribe();
     onCancelVideoContent();
     super.onClose();
   }
@@ -135,7 +139,7 @@ class UploadReelsController extends GetxController {
     words.removeLast();
     captionController.text = words.join(' ');
     captionController.text = captionController.text + ' ' + ("#${filterHashtag[index].hashTag} ");
-    captionController.selection = TextSelection.fromPosition(TextPosition(offset: captionController.text.length));
+    captionController.selection = TextSelection.fromPosition(TextSelection.fromPosition(captionController.text.length));
     isShowHashTag.value = false;
     update(["onChangeHashtag"]);
   }
@@ -152,7 +156,7 @@ class UploadReelsController extends GetxController {
     }
     captionController.text = words.join(' ');
     captionController.selection = TextSelection.fromPosition(
-      TextPosition(offset: captionController.text.length),
+      TextSelection.fromPosition(captionController.text.length),
     );
 
     String updatedText = captionController.text;
@@ -205,7 +209,7 @@ class UploadReelsController extends GetxController {
   Future<void> onUploadReels() async {
     Utils.showLog("Reels Uploading Process Started...");
     if (InternetConnection.isConnect.value) {
-      uploadProgressPercentage.value = "0%";
+      uploadProgressPercentage.value = "Starting...";
       
       Get.dialog(
         PopScope(
@@ -219,8 +223,9 @@ class UploadReelsController extends GetxController {
                 const CupertinoActivityIndicator(radius: 15),
                 const SizedBox(height: 15),
                 Obx(() => Text(
-                  "Uploading: ${uploadProgressPercentage.value}",
+                  uploadProgressPercentage.value,
                   style: AppFontStyle.styleW600(AppColor.black, 15),
+                  textAlign: TextAlign.center,
                 )),
               ],
             ),
@@ -232,21 +237,25 @@ class UploadReelsController extends GetxController {
       String finalVideoPath = videoPath;
 
       // --- VIDEO COMPRESSION START ---
-      // --- VIDEO COMPRESSION START ---
       if (videoPath.isNotEmpty && File(videoPath).existsSync()) {
         try {
           final originalSize = File(videoPath).lengthSync();
           Utils.showLog("Original Video Size: ${(originalSize / (1024 * 1024)).toStringAsFixed(2)} MB");
 
-          uploadProgressPercentage.value = "Compressing...";
+          // Listen directly to the compression stream buffer update loops
+          _compressionSubscription = VideoCompress.compressProgress.listen((progress) {
+            uploadProgressPercentage.value = "Compressing: ${progress.toStringAsFixed(0)}%";
+          });
           
-          // Force execution context off the UI thread profile using native background tasks
           final MediaInfo? mediaInfo = await VideoCompress.compressVideo(
             videoPath,
-            quality: VideoQuality.MediumQuality, // ✅ Changed from Default to Medium for much better file shrinkage
+            quality: VideoQuality.MediumQuality, 
             deleteOrigin: false, 
             includeAudio: true,
           );
+
+          // Always cancel the subscription immediately when down stream completes
+          _compressionSubscription?.unsubscribe();
 
           if (mediaInfo != null && mediaInfo.path != null) {
             finalVideoPath = mediaInfo.path!;
@@ -257,10 +266,10 @@ class UploadReelsController extends GetxController {
             Utils.showLog("⚠️ Compression returned empty media information. Using original file.");
           }
         } catch (e) {
+          _compressionSubscription?.unsubscribe();
           Utils.showLog("❌ Error during video compression: $e");
         }
       }
-      // --- VIDEO COMPRESSION END ---
       // --- VIDEO COMPRESSION END ---
 
       List<String> hashTagIds = [];
@@ -282,21 +291,26 @@ class UploadReelsController extends GetxController {
         }
       }
 
-      if (videoThumbnailUrl != null && videoThumbnailUrl!.isNotEmpty && finalVideoPath.isNotEmpty) {
+      // Safeguard: explicitly fall back to local videoThumbnail variable if videoThumbnailUrl framework context dropped values
+      String finalThumbnail = (videoThumbnailUrl != null && videoThumbnailUrl!.isNotEmpty) ? videoThumbnailUrl! : videoThumbnail;
+
+      if (finalThumbnail.isNotEmpty && finalVideoPath.isNotEmpty) {
+        uploadProgressPercentage.value = "Uploading: 0%";
+        
         uploadReelsModel = await UploadReelsApi.callApi(
           loginUserId: Database.loginUserId,
-          videoImage: videoThumbnailUrl ?? "",
+          videoImage: finalThumbnail, // ✅ Secure local verified image parameter string path
           videoUrl: finalVideoPath,
           videoTime: videoTime.toString(),
           hashTag: hashTagIds.map((e) => "$e").join(',').toString(),
           caption: captionController.text.trim(),
           songId: songId,
           onProgressUpdate: (progressString) {
-            uploadProgressPercentage.value = progressString;
+            uploadProgressPercentage.value = "Uploading: $progressString";
           }
         );
       } else {
-        Utils.showLog("❌ FAIL: Thumb: $videoThumbnailUrl, Path: $finalVideoPath");
+        Utils.showLog("❌ FAIL: Thumb: $finalThumbnail, Path: $finalVideoPath");
         Utils.showToast(EnumLocal.txtSomeThingWentWrong.name.tr);
       }
 
