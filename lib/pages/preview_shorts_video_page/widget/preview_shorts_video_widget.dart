@@ -134,10 +134,16 @@ class _PreviewShortsViewState extends State<PreviewShortsView> with SingleTicker
           },
         );
       }
-    } catch (e) {
-      onDisposeVideoPlayer();
-      Utils.showLog("Reels Video Initialization Failed !!! ${widget.index} => $e");
-    }
+    } catch (e, stack) {
+  print("========== VIDEO INIT ERROR ==========");
+  print("INDEX: ${widget.index}");
+  print("URL: ${controller.mainShorts[widget.index].videoUrl}");
+  print("ERROR: $e");
+  print("STACK: $stack");
+  print("=====================================");
+
+  onDisposeVideoPlayer();
+}
   }
 
   void onStopVideo() {
