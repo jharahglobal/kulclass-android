@@ -82,16 +82,25 @@ class UploadReelsApi {
         Utils.showLog("❌ Upload Failed Status: ${response.statusCode}");
         return null;
       }
-    } on dio_lib.DioException catch (e) {
-      if (e.response?.statusCode == 413) {
-        Utils.showLog("❌ ERROR: File too large (413). Check backend / Nginx client_max_body_size config.");
-      } else {
-        Utils.showLog("❌ Dio Network Exception => ${e.type} - ${e.message}");
-      }
-      return null;
-    } catch (e) {
-      Utils.showLog("❌ Upload General Exception => $e");
-      return null;
-    }
+    } 
+    } on dio_lib.DioException catch (e, stackTrace) {
+  print("========== DIO ERROR ==========");
+  print("TYPE: ${e.type}");
+  print("MESSAGE: ${e.message}");
+  print("STATUS: ${e.response?.statusCode}");
+  print("DATA: ${e.response?.data}");
+  print("ERROR: ${e.error}");
+  print("STACK: $stackTrace");
+  print("===============================");
+
+  return null;
+} catch (e, stackTrace) {
+  print("========== GENERAL ERROR ==========");
+  print("ERROR: $e");
+  print("STACK: $stackTrace");
+  print("===================================");
+
+  return null;
+}
   }
 }
