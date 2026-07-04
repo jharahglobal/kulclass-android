@@ -317,7 +317,8 @@ class UploadReelsController extends GetxController {
       if (uploadReelsModel?.status == true && uploadReelsModel?.data?.id != null) {
         isVideoUploadSuccess = true;
         Utils.showToast(EnumLocal.txtReelsUploadSuccessfully.name.tr);
-        Get.close(2);
+        Get.back(); // close loading dialog
+  Get.back(result: true); // close upload page
       } else if (uploadReelsModel?.status == false && uploadReelsModel?.message == "your duration of Video greater than decided by the admin.") {
         Get.back(); 
         Utils.showToast(uploadReelsModel?.message ?? "");
