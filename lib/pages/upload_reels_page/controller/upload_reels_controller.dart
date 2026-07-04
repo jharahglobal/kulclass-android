@@ -261,8 +261,7 @@ if (videoPath.isNotEmpty && File(videoPath).existsSync()) {
     final session = await FFmpegKit.execute(
       '-y '
       '-i "$videoPath" '
-      '-c:v libx264 '
-      '-preset veryfast '
+      '-c:v H264 ' // Uses the standard fallback wrapper if libx264 is stripped
       '-crf 28 '
       '-pix_fmt yuv420p '
       '-movflags +faststart '
