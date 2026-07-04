@@ -1,3 +1,6 @@
+import 'package:get_storage/get_storage.dart';
+import 'package:auralive/custom/custom_fetch_user_coin.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import 'package:blurrycontainer/blurrycontainer.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -27,6 +30,9 @@ import 'package:auralive/utils/database.dart';
 import 'package:auralive/utils/enums.dart';
 import 'package:auralive/utils/font_style.dart';
 import 'package:auralive/utils/utils.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PostView extends StatefulWidget {
   const PostView({
@@ -92,6 +98,163 @@ class _PostViewState extends State<PostView> {
     super.initState();
   }
 
+  // --------------------------------------------------------
+  // NEW CART LOGIC START
+  // --------------------------------------------------------
+  void onClickCart() {
+  final storage = GetStorage();
+
+  final userEmail = storage.read('user_email') ?? '';
+  final int userCoin = CustomFetchUserCoin.coin.value;
+
+  final shopUserId = widget.userId;
+  final shopName = widget.title;
+
+  final webUrl =
+    "https://kulclass.com/shop/buy.php"
+    "?userEmail=${Uri.encodeComponent(userEmail)}"
+    "&userCoin=$userCoin"
+    "&shopUserId=${Uri.encodeComponent(shopUserId)}"
+    "&shopName=${Uri.encodeComponent(shopName)}";
+
+  Utils.showLog("Opening Shop URL: $webUrl");
+
+  _showFullScreenWebView(context, webUrl);
+}
+
+
+
+  void _showFullScreenWebView(BuildContext context, String url) {
+    if (kIsWeb || !(Platform.isAndroid || Platform.isIOS)) {
+      _openUrlInBrowser(url);
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) {
+          bool isLoading = true;
+          
+          // --- WEBVIEW CONTROLLER SETUP ---
+          final webController = WebViewController()
+            ..setJavaScriptMode(JavaScriptMode.unrestricted)
+            ..setNavigationDelegate(
+              NavigationDelegate(
+                onPageFinished: (_) {
+                  // We need to update the UI (loader) safely
+                  // Note: In a stateless/builder context, we might need a safer way to update state,
+                  // but for this specific structure, we update the builder's state if possible, 
+                  // or relying on the initial load. 
+                  // Ideally, use a ValueNotifier for isLoading to avoid complex State logic here.
+                  isLoading = false; 
+                },
+                
+                // === NEW: INTERCEPT LINKS (The Fix) ===
+                onNavigationRequest: (NavigationRequest request) async {
+                  final String url = request.url;
+                  
+                  // 1. Check for External App Schemes
+                  if (url.startsWith('whatsapp:') || 
+                      url.startsWith('intent:') || 
+                      url.contains('api.whatsapp.com') ||
+                      url.contains('wa.me') ||
+                      url.startsWith('tg:') || 
+                      url.startsWith('tel:') || 
+                      url.startsWith('mailto:')) {
+                    
+                    final Uri uri = Uri.parse(url);
+                    
+                    // 2. Open Outside the App (in WhatsApp/Telegram/Dialer)
+                    try {
+                      // We force externalApplication mode
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    } catch (e) {
+                      debugPrint("Could not launch external app: $e");
+                    }
+                    
+                    // 3. STOP WebView from trying to load it (prevents crash)
+                    return NavigationDecision.prevent; 
+                  }
+                  
+                  // Allow normal websites to load
+                  return NavigationDecision.navigate;
+                },
+              ),
+            )
+            ..loadRequest(Uri.parse(url));
+
+          return StatefulBuilder(
+            builder: (context, setState) {
+              // We inject a listener to refresh the loader state when page finishes
+              // This is a quick dirty fix to make the loader disappear inside StatefulBuilder
+              webController.setNavigationDelegate(
+                 NavigationDelegate(
+                    onPageFinished: (_) {
+                      if(context.mounted) {
+                        setState(() { isLoading = false; });
+                      }
+                    },
+                    // Re-attach the interception logic here because setNavigationDelegate overrides the previous one
+                    onNavigationRequest: (NavigationRequest request) async {
+                        final String url = request.url;
+                        if (url.startsWith('whatsapp:') || 
+                            url.startsWith('intent:') || 
+                            url.contains('api.whatsapp.com') ||
+                            url.startsWith('tg:') || 
+                            url.startsWith('tel:')) {
+                          try {
+                            await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                          } catch (e) { debugPrint("Error: $e"); }
+                          return NavigationDecision.prevent;
+                        }
+                        return NavigationDecision.navigate;
+                    }
+                 )
+              );
+
+              return Scaffold(
+                appBar: AppBar(
+                  backgroundColor: Colors.white,
+                  title: const Text("Shop", style: TextStyle(color: Colors.black)),
+                  leading: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.black),
+                    onPressed: () {
+  Navigator.pop(context);
+},
+                  ),
+                ),
+                body: Stack(
+                  children: [
+                    WebViewWidget(controller: webController),
+                    if (isLoading)
+                      const Center(child: CircularProgressIndicator()),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  // --------------------------------------------------------
+  // NEW CART LOGIC END
+  // --------------------------------------------------------
+// ADD IT HERE
+  Future<void> _openUrlInBrowser(String url) async {
+    final uri = Uri.parse(url);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+    }
+  }
+
+  
   Future<void> onClickLike() async {
     if (isLike.value) {
       isLike.value = false;
@@ -472,6 +635,28 @@ class _PostViewState extends State<PostView> {
                         ),
                       ),
                     ),
+
+                     // *************************************
+                    // NEW CART ICON ADDED HERE
+                    // *************************************
+                 
+                    GestureDetector(
+  onTap: onClickCart,
+  child: Container(
+    height: 30,
+    width: 38,
+    color: AppColor.transparent,
+    alignment: Alignment.center,
+    child: const Icon(
+      Icons.shopping_cart,
+      color: AppColor.colorUnselectedIcon,
+      size: 24,
+    ),
+  ),
+),
+                    // *************************************END
+
+                    
                     GestureDetector(
                       onTap: () {
                         ReportBottomSheetUi.show(context: context, eventId: widget.id, eventType: 2); // Post Report...
