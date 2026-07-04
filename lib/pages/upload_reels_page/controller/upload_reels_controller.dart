@@ -272,6 +272,7 @@ if (videoPath.isNotEmpty && File(videoPath).existsSync()) {
     // --- Encoder Ends ---
 
     final returnCode = await session.getReturnCode();
+    final logs = await session.getLogsAsString();
  
 
     if (!ReturnCode.isSuccess(returnCode)) {
