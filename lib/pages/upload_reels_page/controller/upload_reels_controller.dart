@@ -54,7 +54,7 @@ class UploadReelsController extends GetxController {
   RxString uploadProgressPercentage = "0%".obs;
   
   // Subscription handler tracking compression metrics out-of-thread
-  Subscription? _compressionSubscription;
+   
 
   @override
   void onInit() {
@@ -64,8 +64,7 @@ class UploadReelsController extends GetxController {
   }
 
   @override
-  void onClose() {
-    _compressionSubscription?.unsubscribe();
+  void onClose() { 
     onCancelVideoContent();
     super.onClose();
   }
@@ -256,13 +255,17 @@ class UploadReelsController extends GetxController {
         "${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.mp4";
 
     final session = await FFmpegKit.execute(
-      "-i \"$videoPath\" "
-      "-vcodec libx264 "
-      "-crf 28 "
-      "-preset veryfast "
-      "-acodec aac "
-      "\"$compressedPath\"",
-    );
+  '-y '
+  '-i "$videoPath" '
+  '-c:v libx264 '
+  '-preset veryfast '
+  '-crf 28 '
+  '-pix_fmt yuv420p '
+  '-movflags +faststart '
+  '-c:a aac '
+  '-b:a 128k '
+  '"$compressedPath"',
+);
 
     final returnCode = await session.getReturnCode();
 
