@@ -121,16 +121,27 @@ class PreviewTrimVideoController extends GetxController {
     super.onClose();
   }
 
-  void onClickNext() {
-    onStopVideo();
+ Future<void> onClickNext() async {
+  onStopVideo();
 
-    if (Utils.shortsDuration > videoTime) {
-      Get.toNamed(
-        AppRoutes.uploadReelsPage,
-        arguments: {"video": videoUrl, "image": videoThumbnail, "time": videoTime, "songId": songId},
-      );
-    } else {
-      Utils.showToast("your duration of Video greater than decided by the admin !!");
+  if (Utils.shortsDuration > videoTime) {
+
+    final result = await Get.toNamed(
+      AppRoutes.uploadReelsPage,
+      arguments: {
+        "video": videoUrl,
+        "image": videoThumbnail,
+        "time": videoTime,
+        "songId": songId,
+      },
+    );
+
+    if (result == true) {
+      Get.back(); // Close PreviewTrimVideo and return to the previous page (Reels)
     }
+
+  } else {
+    Utils.showToast("your duration of Video greater than decided by the admin !!");
   }
+}
 }
