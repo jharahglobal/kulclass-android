@@ -212,7 +212,9 @@ class UploadReelsController extends GetxController {
   Future<void> onUploadReels() async {
     Utils.showLog("Reels Uploading Process Started...");
     if (InternetConnection.isConnect.value) {
-      uploadProgressPercentage.value = "Starting...";
+      
+      uploadProgress.value = 0.0;
+uploadProgressPercentage.value = "Preparing video...";
       
       Get.dialog(
         PopScope(
@@ -280,7 +282,11 @@ if (videoPath.isNotEmpty && File(videoPath).existsSync()) {
 
     // --- Encoder start---
 
-   final session = await FFmpegKit.execute(
+  FFmpegSession? session;
+
+final completer = Completer<void>();
+
+session = await FFmpegKit.executeAsync(
   '-y '
   '-i "$videoPath" '
   '-c:v mpeg4 '
@@ -288,7 +294,26 @@ if (videoPath.isNotEmpty && File(videoPath).existsSync()) {
   '-c:a aac '
   '-b:a 128k '
   '"$compressedPath"',
+
+  (session) async {
+    completer.complete();
+  },
+
+  null,
+
+  (statistics) {
+    final currentTime = statistics.getTime();
+
+    if (videoTime > 0) {
+      final progress =
+          (currentTime / (videoTime * 1000)).clamp(0.0, 1.0);
+
+      uploadProgressPercentage.value =
+          "Compressing ${(progress * 100).toStringAsFixed(0)}%";
+    }
+  },
 );
+    await completer.future;
     // --- Encoder Ends ---
 
     final returnCode = await session.getReturnCode();
@@ -404,9 +429,24 @@ else {
           hashTag: hashTagIds.map((e) => "$e").join(',').toString(),
           caption: captionController.text.trim(),
           songId: songId,
+          // progress two
           onProgressUpdate: (progressString) {
-            uploadProgressPercentage.value = "Uploading: $progressString";
+
+          uploadProgressPercentage.value =
+              "Uploading: $progressString";
+        
+          final percent = double.tryParse(
+              progressString.replaceAll("%", ""));
+        
+          if (percent != null) {
+        
+            uploadProgress.value =
+                0.70 + ((percent / 100) * 0.30);
+        
           }
+        
+        }
+          // progress two end
         );
       } else {
         Utils.showLog("❌ FAIL: Thumb: $finalThumbnail, Path: $finalVideoPath");
