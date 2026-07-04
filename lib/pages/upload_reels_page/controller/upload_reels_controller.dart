@@ -260,20 +260,15 @@ if (videoPath.isNotEmpty && File(videoPath).existsSync()) {
 
     // --- Encoder start---
 
-    final session = await FFmpegKit.execute(
-  '-encoders',
+   final session = await FFmpegKit.execute(
+  '-y '
+  '-i "$videoPath" '
+  '-c:v mpeg4 '
+  '-qscale:v 5 '
+  '-c:a aac '
+  '-b:a 128k '
+  '"$compressedPath"',
 );
-
-final logs = await session.getLogsAsString();
-
-Utils.showLog(logs);
-
-Get.back();
-
-Utils.showToast("Encoder list printed to console.");
-
-return;
-
     // --- Encoder Ends ---
 
     final returnCode = await session.getReturnCode();
