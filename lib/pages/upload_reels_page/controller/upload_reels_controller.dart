@@ -5,7 +5,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart'; 
-import 'package:video_compress/video_compress.dart';
+
+import 'package:ffmpeg_kit_16kb/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_16kb/return_code.dart';
+
 import 'package:get_thumbnail_video/video_thumbnail.dart'; 
 import 'package:path_provider/path_provider.dart';      
 
@@ -238,38 +241,48 @@ class UploadReelsController extends GetxController {
 
       // --- VIDEO COMPRESSION START ---
       if (videoPath.isNotEmpty && File(videoPath).existsSync()) {
-        try {
-          final originalSize = File(videoPath).lengthSync();
-          Utils.showLog("Original Video Size: ${(originalSize / (1024 * 1024)).toStringAsFixed(2)} MB");
+  try {
+    final originalSize = File(videoPath).lengthSync();
 
-          // ✅ Correct implementation using the package's native observable stream listener
-          _compressionSubscription = VideoCompress.compressProgress$.subscribe((progress) {
-            uploadProgressPercentage.value = "Compressing: ${progress.toStringAsFixed(0)}%";
-          });
-          
-          final MediaInfo? mediaInfo = await VideoCompress.compressVideo(
-            videoPath,
-            quality: VideoQuality.MediumQuality, 
-            deleteOrigin: false, 
-            includeAudio: true,
-          );
+    Utils.showLog(
+      "Original Size: ${(originalSize / (1024 * 1024)).toStringAsFixed(2)} MB",
+    );
 
-          // Always cancel the subscription immediately when down stream completes
-          _compressionSubscription?.unsubscribe();
+    uploadProgressPercentage.value = "Compressing...";
 
-          if (mediaInfo != null && mediaInfo.path != null) {
-            finalVideoPath = mediaInfo.path!;
-            final compressedSize = File(finalVideoPath).lengthSync();
-            Utils.showLog("✅ Video Compressed Successfully!");
-            Utils.showLog("Compressed Video Size: ${(compressedSize / (1024 * 1024)).toStringAsFixed(2)} MB");
-          } else {
-            Utils.showLog("⚠️ Compression returned empty media information. Using original file.");
-          }
-        } catch (e) {
-          _compressionSubscription?.unsubscribe();
-          Utils.showLog("❌ Error during video compression: $e");
-        }
-      }
+    final tempDir = await getTemporaryDirectory();
+
+    final compressedPath =
+        "${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.mp4";
+
+    final session = await FFmpegKit.execute(
+      "-i \"$videoPath\" "
+      "-vcodec libx264 "
+      "-crf 28 "
+      "-preset veryfast "
+      "-acodec aac "
+      "\"$compressedPath\"",
+    );
+
+    final returnCode = await session.getReturnCode();
+
+    if (ReturnCode.isSuccess(returnCode) &&
+        File(compressedPath).existsSync()) {
+
+      finalVideoPath = compressedPath;
+
+      final compressedSize = File(finalVideoPath).lengthSync();
+
+      Utils.showLog(
+        "Compressed Size: ${(compressedSize / (1024 * 1024)).toStringAsFixed(2)} MB",
+      );
+    } else {
+      Utils.showLog("Compression failed. Using original video.");
+    }
+  } catch (e) {
+    Utils.showLog("Compression Error: $e");
+  }
+}
       // --- VIDEO COMPRESSION END ---
 
       List<String> hashTagIds = [];
