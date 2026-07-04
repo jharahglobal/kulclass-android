@@ -33,6 +33,7 @@ import 'package:auralive/utils/font_style.dart';
 import 'package:auralive/utils/utils.dart';
 import 'package:vibration/vibration.dart';
 import 'package:video_player/video_player.dart';
+import 'package:auralive/utils/api.dart';
 
 class PreviewShortsView extends StatefulWidget {
   const PreviewShortsView({super.key, required this.index, required this.currentPageIndex});
@@ -99,9 +100,14 @@ class _PreviewShortsViewState extends State<PreviewShortsView> with SingleTicker
 
   Future<void> initializeVideoPlayer() async {
     try {
-      String videoPath = controller.mainShorts[widget.index].videoUrl;
+     String videoPath = controller.mainShorts[widget.index].videoUrl;
 
-      videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(videoPath));
+final url = videoPath.startsWith("http")
+    ? videoPath
+    : Api.baseUrl + videoPath;
+
+videoPlayerController =
+    VideoPlayerController.networkUrl(Uri.parse(url));
 
       await videoPlayerController?.initialize();
 
