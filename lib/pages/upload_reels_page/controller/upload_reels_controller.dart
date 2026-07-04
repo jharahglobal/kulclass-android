@@ -52,6 +52,7 @@ class UploadReelsController extends GetxController {
 
   bool isVideoUploadSuccess = false;
   RxString uploadProgressPercentage = "0%".obs;
+  RxDouble uploadProgress = 0.0.obs;
   
   // Subscription handler tracking compression metrics out-of-thread
    
@@ -219,18 +220,37 @@ class UploadReelsController extends GetxController {
           child: AlertDialog(
             backgroundColor: AppColor.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CupertinoActivityIndicator(radius: 15),
-                const SizedBox(height: 15),
-                Obx(() => Text(
-                  uploadProgressPercentage.value,
-                  style: AppFontStyle.styleW600(AppColor.black, 15),
-                  textAlign: TextAlign.center,
-                )),
-              ],
-            ),
+            // progress
+            content: SizedBox(
+  width: 300,
+  child: Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+
+      const CupertinoActivityIndicator(radius: 15),
+
+      const SizedBox(height: 20),
+
+      Obx(() => ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: LinearProgressIndicator(
+          value: uploadProgress.value,
+          minHeight: 8,
+        ),
+      )),
+
+      const SizedBox(height: 15),
+
+      Obx(() => Text(
+        uploadProgressPercentage.value,
+        style: AppFontStyle.styleW600(AppColor.black, 15),
+        textAlign: TextAlign.center,
+      )),
+
+    ],
+  ),
+),
+            // end progress
           )
         ), 
         barrierDismissible: false
