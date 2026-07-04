@@ -163,29 +163,29 @@ class VideoPickerBottomSheetUi {
             
 
             // ✅ ONLY CREATE REEL OPTION REMAINS
-            GestureDetector(
-              onTap: () {
-                Get.back();
-                Get.toNamed(AppRoutes.createReelsPage);
-              },
-              child: Container(
-                height: 55,
-                color: AppColor.transparent,
-                alignment: Alignment.center,
-                padding: EdgeInsets.symmetric(horizontal: 25),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Image.asset(AppAsset.icCameraGradiant, color: AppColor.black, width: 26),
-                    15.width,
-                    Text(
-                      EnumLocal.txtCreateReels.name.tr,
-                      style: AppFontStyle.styleW700(AppColor.black, 17),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            // GestureDetector(
+//              onTap: () {
+//                Get.back();
+//                Get.toNamed(AppRoutes.createReelsPage);
+//              },
+//              child: Container(
+//                height: 55,
+//                color: AppColor.transparent,
+//                alignment: Alignment.center,
+//                padding: EdgeInsets.symmetric(horizontal: 25),
+//                child: Row(
+//                  crossAxisAlignment: CrossAxisAlignment.center,
+//                  children: [
+//                    Image.asset(AppAsset.icCameraGradiant, color: AppColor.black, width: 26),
+//                    15.width,
+//                    Text(
+//                      EnumLocal.txtCreateReels.name.tr,
+//                      style: AppFontStyle.styleW700(AppColor.black, 17),
+//                    ),
+//                  ],
+//                ),
+//              ),
+//            ),
           ],
         ),
       ),
