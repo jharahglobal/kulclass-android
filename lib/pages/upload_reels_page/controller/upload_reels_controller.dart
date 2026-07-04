@@ -258,17 +258,23 @@ if (videoPath.isNotEmpty && File(videoPath).existsSync()) {
     final compressedPath =
         "${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.mp4";
 
+    // --- Encoder start---
+
     final session = await FFmpegKit.execute(
-      '-y '
-      '-i "$videoPath" '
-      '-c:v H264 ' // Uses the standard fallback wrapper if libx264 is stripped
-      '-crf 28 '
-      '-pix_fmt yuv420p '
-      '-movflags +faststart '
-      '-c:a aac '
-      '-b:a 128k '
-      '"$compressedPath"',
-    );
+  '-encoders',
+);
+
+final logs = await session.getLogsAsString();
+
+Utils.showLog(logs);
+
+Get.back();
+
+Utils.showToast("Encoder list printed to console.");
+
+return;
+
+    // --- Encoder Ends ---
 
     final returnCode = await session.getReturnCode();
 
