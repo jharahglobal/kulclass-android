@@ -27,11 +27,79 @@ class LiveController extends GetxController {
 
   TextEditingController commentController = TextEditingController();
 
+
+  class LiveController extends GetxController {
+  bool isFrontCamera = false;
+  bool isFlashOn = false;
+  bool isMicOn = true;
+
+  String userId = "";
+  String image = "";
+  String name = "";
+  String userName = "";
+  bool isFollow = false;
+  bool isProfileImageBanned = false;
+
+  int countTime = 0;
+  bool isLivePage = false;
+
+  TextEditingController commentController = TextEditingController();
+
+  // ==========================================================
+  // ADD THIS ONINIT INITIALIZATION BLOCK TO FIX ZEGO STORAGE ERROR
+  // ==========================================================
+  @override
+  void onInit() {
+    super.onInit();
+    
+    // 1. Unpack incoming route parameters safely
+    userId = Get.arguments["userId"] ?? "";
+    image = Get.arguments["image"] ?? "";
+    name = Get.arguments["name"] ?? "";
+    userName = Get.arguments["userName"] ?? "";
+    isFollow = Get.arguments["isFollow"] ?? false;
+
+    // 2. Clear out Zego's internal storage logging dependencies
+    initZegoSafeSettings();
+
+    // 3. Keep your room timer tracking active
+    onChangeTime();
+  }
+
+  Future<void> initZegoSafeSettings() async {
+    try {
+      // Create a custom engine profile that overrides default storage configurations
+      ZegoEngineProfile profile = ZegoEngineProfile(
+        Database.zegoAppId, // Replace with your exact appID variable if named differently
+        ZegoScenario.Default,
+        appSign: Database.zegoAppSignIn, // Replace with your exact appSign variable
+      );
+
+      // Explicitly guide Zego's logger to use internal cache directory instead of public storage
+      ZegoLogConfig logConfig = ZegoLogConfig();
+      logConfig.logPath = ""; // Empty string forces Zego onto internal sandboxed storage routes
+      
+      ZegoEngineConfig config = ZegoEngineConfig();
+      config.logConfig = logConfig;
+      
+      await ZegoExpressEngine.setEngineConfig(config);
+      
+      // Now safe to connect or wake up the instance pipelines
+      Utils.showLog("Zego storage engine configurations bypassed safely.");
+    } catch (e) {
+      Utils.showLog("Zego config error caught: $e");
+    }
+  }
+ 
+
+  
   Future<void> onSwitchMic() async {
     isMicOn = !isMicOn;
     ZegoExpressEngine.instance.enableAudioCaptureDevice(isMicOn);
     update(["onSwitchMic"]);
   }
+
+  
 
   Future<void> onSwitchCamera() async {
     Get.dialog(const LoadingUi(), barrierDismissible: false); // Start Loading...
