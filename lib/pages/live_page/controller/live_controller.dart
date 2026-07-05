@@ -52,26 +52,16 @@ class LiveController extends GetxController {
 
   Future<void> initZegoSafeSettings() async {
     try {
-      // Create a custom engine profile that overrides default storage configurations
-      ZegoEngineProfile profile = ZegoEngineProfile(
-        Database.zegoAppId, // Replace with your exact appID variable if named differently
-        ZegoScenario.Default,
-        appSign: Database.zegoAppSignIn, // Replace with your exact appSign variable
-      );
-
-      // Explicitly guide Zego's logger to use internal cache directory instead of public storage
-      ZegoLogConfig logConfig = ZegoLogConfig();
-      logConfig.logPath = ""; // Empty string forces Zego onto internal sandboxed storage routes
+      // Create log config passing an empty string for path and 0 for size to satisfy the constructor parameters
+      ZegoLogConfig logConfig = ZegoLogConfig("", 0);
       
       ZegoEngineConfig config = ZegoEngineConfig();
       config.logConfig = logConfig;
       
       await ZegoExpressEngine.setEngineConfig(config);
-      
-      // Now safe to connect or wake up the instance pipelines
-      Utils.showLog("Zego storage engine configurations bypassed safely.");
+      Utils.showLog("Zego media logging engine configured safely using sandboxed directories.");
     } catch (e) {
-      Utils.showLog("Zego config error caught: $e");
+      Utils.showLog("Error setting Zego engine storage configs: $e");
     }
   }
  
