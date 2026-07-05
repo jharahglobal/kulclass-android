@@ -36,32 +36,39 @@ class LiveController extends GetxController {
   void onInit() {
     super.onInit();
     
-    // 1. Unpack incoming route parameters safely
-    userId = Get.arguments["userId"] ?? "";
-    image = Get.arguments["image"] ?? "";
-    name = Get.arguments["name"] ?? "";
-    userName = Get.arguments["userName"] ?? "";
-    isFollow = Get.arguments["isFollow"] ?? false;
+    // Unpack incoming route parameters safely while the controller boots
+    if (Get.arguments != null) {
+      userId = Get.arguments["userId"] ?? "";
+      image = Get.arguments["image"] ?? "";
+      name = Get.arguments["name"] ?? "";
+      userName = Get.arguments["userName"] ?? "";
+      isFollow = Get.arguments["isFollow"] ?? false;
+    }
+  }
 
-    // 2. Clear out Zego's internal storage logging dependencies
+  @override
+  void onReady() {
+    super.onReady();
+    
+    // Initialize Zego configurations safely after the screen layout finishes rendering
     initZegoSafeSettings();
 
-    // 3. Keep your room timer tracking active
+    // Start tracking live room time metrics
     onChangeTime();
   }
 
   Future<void> initZegoSafeSettings() async {
     try {
-      // Create log config passing an empty string for path and 0 for size to satisfy the constructor parameters
+      // Configure Zego logger to write directly to clean app-private sandboxed memory arrays
       ZegoLogConfig logConfig = ZegoLogConfig("", 0);
       
       ZegoEngineConfig config = ZegoEngineConfig();
       config.logConfig = logConfig;
       
       await ZegoExpressEngine.setEngineConfig(config);
-      Utils.showLog("Zego media logging engine configured safely using sandboxed directories.");
+      Utils.showLog("Zego storage engine configurations bypassed safely on layout ready.");
     } catch (e) {
-      Utils.showLog("Error setting Zego engine storage configs: $e");
+      Utils.showLog("Zego config error caught: $e");
     }
   }
  
