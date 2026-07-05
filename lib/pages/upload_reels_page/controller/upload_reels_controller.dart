@@ -465,8 +465,13 @@ else {
       if (uploadReelsModel?.status == true && uploadReelsModel?.data?.id != null) {
         isVideoUploadSuccess = true;
         Utils.showToast(EnumLocal.txtReelsUploadSuccessfully.name.tr);
-        Get.back(); // close loading dialog
-  Get.back(result: true); // close upload page
+        
+        Get.back();
+
+Future.delayed(const Duration(milliseconds: 100), () {
+  Get.offAllNamed(AppRoutes.bottomBarPage);
+});
+        
       } else if (uploadReelsModel?.status == false && uploadReelsModel?.message == "your duration of Video greater than decided by the admin.") {
         Get.back(); 
         Utils.showToast(uploadReelsModel?.message ?? "");
