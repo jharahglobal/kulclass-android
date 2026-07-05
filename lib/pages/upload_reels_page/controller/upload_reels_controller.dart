@@ -8,6 +8,8 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:ffmpeg_kit_16kb/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_16kb/return_code.dart';
+import 'package:ffmpeg_kit_16kb/ffmpeg_session.dart';
+import 'package:ffmpeg_kit_16kb/statistics.dart';
 
 import 'package:get_thumbnail_video/video_thumbnail.dart'; 
 import 'package:path_provider/path_provider.dart';      
@@ -305,15 +307,22 @@ session = await FFmpegKit.executeAsync(
     final currentTime = statistics.getTime();
 
     if (videoTime > 0) {
-      final progress =
-          (currentTime / (videoTime * 1000)).clamp(0.0, 1.0);
+      
+       final progress =
+    (currentTime / (videoTime * 1000)).clamp(0.0, 1.0);
 
-      uploadProgressPercentage.value =
-          "Compressing ${(progress * 100).toStringAsFixed(0)}%";
+uploadProgress.value = progress * 0.70;
+
+uploadProgressPercentage.value =
+    "Compressing ${(progress * 100).toStringAsFixed(0)}%";
+
+      
     }
   },
 );
     await completer.future;
+    uploadProgress.value = 0.70;
+uploadProgressPercentage.value = "Compression complete";
     // --- Encoder Ends ---
 
     final returnCode = await session.getReturnCode();
