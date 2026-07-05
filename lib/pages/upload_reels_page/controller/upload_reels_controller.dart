@@ -30,6 +30,7 @@ import 'package:auralive/utils/internet_connection.dart';
 import 'package:auralive/utils/utils.dart';
 import 'package:auralive/utils/color.dart';      
 import 'package:auralive/utils/font_style.dart'; 
+import 'package:auralive/routes/app_routes.dart';
 
 class UploadReelsController extends GetxController {
   UploadReelsModel? uploadReelsModel;
