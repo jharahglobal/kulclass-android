@@ -78,8 +78,9 @@ android {
         }
     } 
 
-    packagingOptions {
+    packaging {
         jniLibs {
+            // This is the correct, modern way to enforce 16KB alignment in AGP 8.1+
             useLegacyPackaging = false
         }
     }
