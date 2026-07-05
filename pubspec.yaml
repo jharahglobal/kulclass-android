@@ -64,7 +64,8 @@ dependencies:
   record: ^6.0.0
   webview_flutter: ^4.13.0
   #  webview_flutter: ^4.11.0
-  webview_flutter_android: ^4.7.0
+  # webview_flutter_android: ^4.7.0
+  webview_flutter_android: ^4.16.0
   file_picker: ^8.0.0
   flutter_local_notifications: ^19.3.0
   dio: ^5.8.0+1
@@ -75,8 +76,8 @@ dependencies:
   http: ^1.4.0
   flutter_svga:
   #  svgaplayer_flutter: ^2.2.0
-  in_app_purchase_android: ^0.4.0+2
-  #  in_app_purchase_android: ^0.4.0+1
+  # in_app_purchase_android: ^0.4.0+2
+  in_app_purchase_android: ^0.4.12
   in_app_purchase_storekit: ^0.4.3
   #  in_app_purchase_storekit: ^0.3.22+1
   vibration: ^3.1.3
