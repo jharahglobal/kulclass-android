@@ -52,8 +52,8 @@ android {
         minSdkVersion 24
         targetSdkVersion 36
         multiDexEnabled true
-        versionCode 55
-        versionName "1.0.55"
+        versionCode 56
+        versionName "1.0.56"
         ndk {
             abiFilters "armeabi-v7a", "arm64-v8a", "x86_64"
         }
@@ -78,7 +78,7 @@ android {
         }
     } 
 
-    packaging {
+    packagingOptions {
         jniLibs {
             useLegacyPackaging = false
         }
