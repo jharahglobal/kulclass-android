@@ -28,23 +28,7 @@ class LiveController extends GetxController {
   TextEditingController commentController = TextEditingController();
 
 
-  class LiveController extends GetxController {
-  bool isFrontCamera = false;
-  bool isFlashOn = false;
-  bool isMicOn = true;
-
-  String userId = "";
-  String image = "";
-  String name = "";
-  String userName = "";
-  bool isFollow = false;
-  bool isProfileImageBanned = false;
-
-  int countTime = 0;
-  bool isLivePage = false;
-
-  TextEditingController commentController = TextEditingController();
-
+ 
   // ==========================================================
   // ADD THIS ONINIT INITIALIZATION BLOCK TO FIX ZEGO STORAGE ERROR
   // ==========================================================
