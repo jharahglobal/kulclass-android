@@ -64,8 +64,7 @@ dependencies:
   record: ^6.0.0
   webview_flutter: ^4.13.0
   #  webview_flutter: ^4.11.0
-  # webview_flutter_android: ^4.7.0
-  webview_flutter_android: ^4.16.0
+  webview_flutter_android: ^4.7.0
   file_picker: ^8.0.0
   flutter_local_notifications: ^19.3.0
   dio: ^5.8.0+1
