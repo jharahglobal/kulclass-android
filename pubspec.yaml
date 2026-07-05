@@ -76,8 +76,7 @@ dependencies:
   http: ^1.4.0
   flutter_svga:
   #  svgaplayer_flutter: ^2.2.0
-  # in_app_purchase_android: ^0.4.0+2
-  in_app_purchase_android: ^0.4.12
+  in_app_purchase_android: ^0.4.0+2 
   in_app_purchase_storekit: ^0.4.3
   #  in_app_purchase_storekit: ^0.3.22+1
   vibration: ^3.1.3
