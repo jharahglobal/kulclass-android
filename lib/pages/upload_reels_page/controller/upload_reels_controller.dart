@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart'; 
+import 'package:dio/dio.dart' as dio_lib;
 
 import 'package:ffmpeg_kit_16kb/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_16kb/return_code.dart';
@@ -145,7 +147,7 @@ class UploadReelsController extends GetxController {
     words.removeLast();
     captionController.text = words.join(' ');
     captionController.text = captionController.text + ' ' + ("#${filterHashtag[index].hashTag} ");
-    captionController.selection = TextSelection.fromPosition(TextPosition(offset: captionController.text.length));
+    captionController.selection = TextSelection.fromPosition(TextSelection(offset: captionController.text.length));
     isShowHashTag.value = false;
     update(["onChangeHashtag"]);
   }
@@ -162,7 +164,7 @@ class UploadReelsController extends GetxController {
     }
     captionController.text = words.join(' ');
     captionController.selection = TextSelection.fromPosition(
-      TextPosition(offset: captionController.text.length),
+      TextSelection(offset: captionController.text.length),
     );
 
     String updatedText = captionController.text;
@@ -217,7 +219,7 @@ class UploadReelsController extends GetxController {
     if (InternetConnection.isConnect.value) {
       
       uploadProgress.value = 0.0;
-uploadProgressPercentage.value = "Preparing video...";
+      uploadProgressPercentage.value = "Preparing video...";
       
       Get.dialog(
         PopScope(
@@ -264,7 +266,7 @@ uploadProgressPercentage.value = "Preparing video...";
       String finalVideoPath = videoPath;
 
       // --- VIDEO COMPRESSION START ---
-   
+    
 
   // ---------------- VIDEO COMPRESSION ----------------
 
@@ -420,43 +422,85 @@ else {
       String finalThumbnail = (videoThumbnailUrl != null && videoThumbnailUrl!.isNotEmpty) ? videoThumbnailUrl! : videoThumbnail;
 
       if (finalThumbnail.isNotEmpty && finalVideoPath.isNotEmpty) {
-        uploadProgressPercentage.value = "Uploading: 0%";
+        uploadProgressPercentage.value = "Uploading to Video Server: 0%";
 
         if (!File(finalVideoPath).existsSync()) {
-  Get.back();
+          Get.back();
+          Utils.showToast("Compressed video cannot be found.");
+          return;
+        }
 
-  Utils.showToast(
-      "Compressed video cannot be found.");
+        // --- BUNNY.NET STREAM API INTEGRATION ---
+        const String bunnyApiKey = 'ec4a587a-307d-4b30-b3fb86d692d0-deb9-44ff'; 
+        const String libraryId = '700372';      
+        String finalBunnyStreamUrl = "";
 
-  return;
-}
-        
+        try {
+          final dio = dio_lib.Dio();
+          
+          // Step 1: Create Video entry placeholder on Bunny.net
+          final createVideoResponse = await dio.post(
+            "https://video.bunnycdn.com/library/$libraryId/videos",
+            data: jsonEncode({"title": "reel_${DateTime.now().millisecondsSinceEpoch}"}),
+            options: dio_lib.Options(
+              headers: {
+                "AccessKey": bunnyApiKey,
+                "Content-Type": "application/json",
+              },
+            ),
+          );
+
+          if (createVideoResponse.statusCode != 200) {
+            throw Exception("Failed to generate Video entry ID from Bunny Stream.");
+          }
+
+          final String bunnyVideoId = createVideoResponse.data["guid"];
+          Utils.showLog("✅ Created Bunny Video Registry ID: $bunnyVideoId");
+
+          // Step 2: Upload direct file stream to Bunny.net storage
+          final videoFileBytes = await File(finalVideoPath).readAsBytes();
+          
+          await dio.put(
+            "https://video.bunnycdn.com/library/$libraryId/videos/$bunnyVideoId",
+            data: dio_lib.Stream.fromIterable(videoFileBytes.map((e) => [e])),
+            options: dio_lib.Options(
+              headers: {
+                "AccessKey": bunnyApiKey,
+                "Content-Type": "application/octet-stream",
+              },
+            ),
+            onSendProgress: (sent, total) {
+              if (total != -1) {
+                double progress = (sent / total) * 100;
+                uploadProgressPercentage.value = "Uploading: ${progress.toStringAsFixed(0)}%";
+                uploadProgress.value = 0.70 + ((progress / 100) * 0.25);
+              }
+            },
+          );
+
+          // Bunny playout URL framework format: https://[Pull-Zone-Domain]/[Video-ID]/playlist.m3u8
+          finalBunnyStreamUrl = "https://video.bunnycdn.com/play/$libraryId/$bunnyVideoId";
+          Utils.showLog("✅ Bunny Stream processing url created: $finalBunnyStreamUrl");
+        } catch (e) {
+          Get.back();
+          Utils.showLog("❌ Bunny Upload Failure: $e");
+          Utils.showToast("Failed streaming platform asset migration safely.");
+          return;
+        }
+
+        // Send metadata package downstream containing generated Stream cloud endpoint directly
         uploadReelsModel = await UploadReelsApi.callApi(
           loginUserId: Database.loginUserId,
-          videoImage: finalThumbnail, // ✅ Secure local verified image parameter string path
-          videoUrl: finalVideoPath,
+          videoImage: finalThumbnail,
+          videoUrl: finalBunnyStreamUrl, 
           videoTime: videoTime.toString(),
           hashTag: hashTagIds.map((e) => "$e").join(',').toString(),
           caption: captionController.text.trim(),
           songId: songId,
-          // progress two
           onProgressUpdate: (progressString) {
-
-          uploadProgressPercentage.value =
-              "Uploading: $progressString";
-        
-          final percent = double.tryParse(
-              progressString.replaceAll("%", ""));
-        
-          if (percent != null) {
-        
-            uploadProgress.value =
-                0.70 + ((percent / 100) * 0.30);
-        
-          }
-        
-        }
-          // progress two end
+            uploadProgressPercentage.value = "Saving post details...";
+            uploadProgress.value = 0.95;
+          },
         );
       } else {
         Utils.showLog("❌ FAIL: Thumb: $finalThumbnail, Path: $finalVideoPath");
