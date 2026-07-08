@@ -164,7 +164,7 @@ class UploadReelsController extends GetxController {
     }
     captionController.text = words.join(' ');
     captionController.selection = TextSelection.fromPosition(
-      TextSelection.collapsed(offset: captionController.text.length),
+      TextPosition(offset: captionController.text.length),
     );
 
     String updatedText = captionController.text;
