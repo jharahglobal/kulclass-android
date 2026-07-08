@@ -36,11 +36,7 @@ class UploadReelsApi {
         'caption': caption,
         'hashTagId': hashTag,
         'videoTime': videoTime,
-        'videoUrl': await dio_lib.MultipartFile.fromFile(
-          videoUrl,
-          filename: videoUrl.split('/').last, // ✅ Explicitly attached file name string parameter
-          contentType: dio_lib.DioMediaType('video', 'mp4'),
-        ),
+        'videoUrl': videoUrl, // Passing the Bunny.net stream URL string instead of file binary payload
       };
 
       if (songId.isNotEmpty) {
