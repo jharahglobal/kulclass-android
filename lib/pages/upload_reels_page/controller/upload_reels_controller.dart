@@ -147,7 +147,7 @@ class UploadReelsController extends GetxController {
     words.removeLast();
     captionController.text = words.join(' ');
     captionController.text = captionController.text + ' ' + ("#${filterHashtag[index].hashTag} ");
-    captionController.selection = TextSelection.fromPosition(TextSelection(offset: captionController.text.length));
+    captionController.selection = TextSelection.fromPosition(TextPosition(offset: captionController.text.length));
     isShowHashTag.value = false;
     update(["onChangeHashtag"]);
   }
@@ -164,7 +164,7 @@ class UploadReelsController extends GetxController {
     }
     captionController.text = words.join(' ');
     captionController.selection = TextSelection.fromPosition(
-      TextSelection(offset: captionController.text.length),
+      TextSelection.collapsed(offset: captionController.text.length),
     );
 
     String updatedText = captionController.text;
@@ -462,7 +462,7 @@ else {
           
           await dio.put(
             "https://video.bunnycdn.com/library/$libraryId/videos/$bunnyVideoId",
-            data: dio_lib.Stream.fromIterable(videoFileBytes.map((e) => [e])),
+            data: Stream.fromIterable(videoFileBytes.map((e) => [e])),
             options: dio_lib.Options(
               headers: {
                 "AccessKey": bunnyApiKey,
