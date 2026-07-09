@@ -479,14 +479,17 @@ else {
           );
 
           // Bunny playout URL framework format: https://[Pull-Zone-Domain]/[Video-ID]/playlist.m3u8
-          finalBunnyStreamUrl = "https://video.bunnycdn.com/play/$libraryId/$bunnyVideoId";
-          Utils.showLog("✅ Bunny Stream processing url created: $finalBunnyStreamUrl");
+          // Construct the actual HLS stream pointer using your default assigned Pull Zone domain hostname
+          finalBunnyStreamUrl = "https://vz-d03f59a5-149.b-cdn.net/$bunnyVideoId/playlist.m3u8";
+          Utils.showLog("✅ Bunny Direct Stream Playback URL created: $finalBunnyStreamUrl");
         } catch (e) {
           Get.back();
           Utils.showLog("❌ Bunny Upload Failure: $e");
           Utils.showToast("Failed streaming platform asset migration safely.");
           return;
         }
+
+        
 
         // Send metadata package downstream containing generated Stream cloud endpoint directly
         uploadReelsModel = await UploadReelsApi.callApi(
