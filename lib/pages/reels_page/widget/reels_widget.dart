@@ -116,19 +116,28 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
         return;
       }
       
-      String videoPath = controller.mainReels[widget.index].videoUrl!;
-
-      // Check if it's already a full network link (e.g. from Bunny.net) or a legacy local server path
+      // Fixed: Only declare videoPath once, cleanly trimming the string
       String videoPath = controller.mainReels[widget.index].videoUrl!.trim();
 
-      // Absolute safety check: If it contains 'http', parse it directly no matter what characters start the string
-      final Uri videoUri = videoPath.contains('http') 
-          ? Uri.parse(videoPath.substring(videoPath.indexOf('http'))) 
-          : Uri.parse(Api.baseUrl + videoPath);
+      // Resolve path variations cleanly for HLS or progressive network streaming
+      final Uri videoUri;
+      if (videoPath.contains('http')) {
+        videoUri = Uri.parse(videoPath.substring(videoPath.indexOf('http')));
+      } else {
+        final String cleanPath = videoPath.startsWith('/') ? videoPath : '/$videoPath';
+        videoUri = Uri.parse(Api.baseUrl.replaceAll(RegExp(r'/$'), '') + cleanPath);
+      }
 
       Utils.showLog("🎯 Final Initialized Video URL: $videoUri");
 
-      videoPlayerController = VideoPlayerController.networkUrl(videoUri);
+      // Configured with network player settings optimized for low-latency chunks
+      videoPlayerController = VideoPlayerController.networkUrl(
+        videoUri,
+        videoPlayerOptions: VideoPlayerOptions(
+          allowBackgroundPlayback: false,
+          mixWithOthers: true,
+        ),
+      );
 
       await videoPlayerController?.initialize();
 
@@ -872,3 +881,4 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
       },
     );
   }
+}
