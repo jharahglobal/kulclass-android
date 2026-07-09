@@ -560,31 +560,64 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
                       : const Offstage(),
                 ),
                 // --- INTERACTIVE VIDEO PROGRESS SLIDER LAYER ---
+                // --- CUSTOM INTERACTIVE VIDEO PROGRESS SLIDER & TIMERS ---
                 Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
+                  bottom: 10, // Lifted slightly off the very bottom edge so it sits perfectly above the navigation bar
+                  left: 15,
+                  right: 15,
                   child: Obx(
                     () => Visibility(
                       visible: (isVideoLoading.value == false && videoPlayerController != null),
-                      child: Container(
-                        width: Get.width,
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        color: Colors.black12,
-                        child: VideoProgressIndicator(
-                          videoPlayerController!,
-                          allowScrubbing: true, // Allows the user to drag to rewind or forward
-                          colors: VideoProgressColors(
-                            playedColor: AppColor.primary, // Color for the watched track portion
-                            bufferedColor: Colors.white.withOpacity(0.3), // Color for buffered video
-                            backgroundColor: Colors.white.withOpacity(0.15), // Color for unplayed track
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Theme(
+                            data: ThemeData(
+                              sliderTheme: SliderThemeData(
+                                trackHeight: 4,
+                                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                                overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                                activeTrackColor: AppColor.primary,
+                                inactiveTrackColor: Colors.white.withOpacity(0.3),
+                                thumbColor: AppColor.primary,
+                                overlayColor: AppColor.primary.withOpacity(0.2),
+                              ),
+                            ),
+                            child: Slider(
+                              value: videoPlayerController!.value.position.inMilliseconds.toDouble().clamp(
+                                    0.0,
+                                    videoPlayerController!.value.duration.inMilliseconds.toDouble(),
+                                  ),
+                              min: 0.0,
+                              max: videoPlayerController!.value.duration.inMilliseconds.toDouble() == 0.0
+                                  ? 1.0
+                                  : videoPlayerController!.value.duration.inMilliseconds.toDouble(),
+                              onChanged: (value) {
+                                videoPlayerController!.seekTo(Duration(milliseconds: value.toInt()));
+                              },
+                            ),
                           ),
-                        ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 22),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _formatDuration(videoPlayerController!.value.position),
+                                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  _formatDuration(videoPlayerController!.value.duration),
+                                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-
                 Positioned(
                   bottom: 0,
                   child: Obx(
@@ -906,5 +939,12 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
         );
       },
     );
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+    return "$twoDigitMinutes:$twoDigitSeconds";
   }
 }
