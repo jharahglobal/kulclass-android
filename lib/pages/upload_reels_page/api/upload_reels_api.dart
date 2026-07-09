@@ -17,13 +17,7 @@ class UploadReelsApi {
     required Function(String) onProgressUpdate, // ✅ Accept progress tracker callback hook
   }) async {
     Utils.showLog("🚀 Upload Reels Api Started via Optimized Stream...");
-
-    final videoFile = File(videoUrl);
-    if (!await videoFile.exists()) {
-      Utils.showLog("❌ ERROR: Video file does not exist at path: $videoUrl");
-      return null;
-    }
-
+ 
     try {
       final dio = dio_lib.Dio();
 
