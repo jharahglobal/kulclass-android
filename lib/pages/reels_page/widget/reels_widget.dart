@@ -112,6 +112,10 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
 
   Future<void> initializeVideoPlayer() async {
     try {
+      if (widget.index >= controller.mainReels.length || controller.mainReels[widget.index] == null) {
+        return;
+      }
+      
       String videoPath = controller.mainReels[widget.index].videoUrl!;
 
       // Check if it's already a full network link (e.g. from Bunny.net) or a legacy local server path
@@ -433,343 +437,255 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
   // NEW CART LOGIC END
   // --------------------------------------------------------
 
-  @override
+ @override
   Widget build(BuildContext context) {
-    if (widget.index == widget.currentPageIndex) {
-      isReadMore.value = false;
-      (isVideoLoading.value == false && isReelsPage.value) ? onPlayVideo() : null;
-    } else {
-      isVideoLoading.value == false ? videoPlayerController?.seekTo(Duration.zero) : null;
-      onStopVideo(); 
-    }
-    return Scaffold(
-      body: SizedBox(
-        height: Get.height,
-        width: Get.width,
-        child: Stack(
-          children: [
-            GestureDetector(
-              onTap: onClickVideo,
-              onDoubleTap: onDoubleClick,
-              child: Container(
-                color: AppColor.black,
-                height: (Get.height - AppConstant.bottomBarSize),
-                width: Get.width,
-                child: Obx(
-                  () {
-                    if (isVideoLoading.value || chewieController == null) {
-                      return Align(
-                        alignment: Alignment.bottomCenter,
-                        child: LinearProgressIndicator(color: AppColor.primary),
-                      );
-                    }
+    return GetBuilder<ReelsController>(
+      id: "onGetReels",
+      builder: (reelsController) {
+        // Guard check to skip ad placeholders or invalid null items inserted into the list
+        if (widget.index >= reelsController.mainReels.length || reelsController.mainReels[widget.index] == null) {
+          return const Scaffold(
+            backgroundColor: Colors.black,
+            body: Center(child: CircularProgressIndicator(color: Colors.white)),
+          );
+        }
 
-                    return SizedBox.expand(
-                      child: FittedBox(
-                        fit: BoxFit.cover,
-                        child: SizedBox(
-                          width: videoPlayerController?.value.size.width ?? 0,
-                          height: videoPlayerController?.value.size.height ?? 0,
-                          child: Chewie(controller: chewieController!),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-              ),
-            ),
-            Positioned(
-              top: MediaQuery.of(context).viewPadding.top + 15,
-              left: 20,
-              child: Visibility(
-                  visible: Utils.isShowWaterMark,
-                  child: CachedNetworkImage(
-                    imageUrl: Utils.waterMarkIcon,
-                    fit: BoxFit.contain,
-                    imageBuilder: (context, imageProvider) => Image(
-                      image: ResizeImage(imageProvider, width: Utils.waterMarkSize, height: Utils.waterMarkSize),
-                      fit: BoxFit.contain,
-                    ),
-                    placeholder: (context, url) => const Offstage(),
-                    errorWidget: (context, url, error) => const Offstage(),
-                  )),
-            ),
-            Align(
-              alignment: Alignment.center,
-              child: SendGiftOnVideoBottomSheetUi.onShowGift(),
-            ),
-            Obx(
-                  () => Visibility(
-                visible: isShowLikeAnimation.value,
-                child: Align(alignment: Alignment.center, child: Lottie.asset(AppAsset.lottieLike, fit: BoxFit.cover, height: 300, width: 300)),
-              ),
-            ),
-            Obx(
-                  () => isShowIcon.value
-                  ? Align(
-                alignment: Alignment.center,
-                child: GestureDetector(
-                  onTap: onClickPlayPause,
+        if (widget.index == widget.currentPageIndex) {
+          isReadMore.value = false;
+          (isVideoLoading.value == false && isReelsPage.value) ? onPlayVideo() : null;
+        } else {
+          isVideoLoading.value == false ? videoPlayerController?.seekTo(Duration.zero) : null;
+          onStopVideo(); 
+        }
+        
+        return Scaffold(
+          body: SizedBox(
+            height: Get.height,
+            width: Get.width,
+            child: Stack(
+              children: [
+                GestureDetector(
+                  onTap: onClickVideo,
+                  onDoubleTap: onDoubleClick,
                   child: Container(
-                    height: 70,
-                    width: 70,
-                    padding: EdgeInsets.only(left: isPlaying.value ? 0 : 2),
-                    decoration: BoxDecoration(color: AppColor.black.withOpacity(0.2), shape: BoxShape.circle),
-                    child: Center(
-                      child: Image.asset(
-                        isPlaying.value ? AppAsset.icPause : AppAsset.icPlay,
-                        width: 30,
-                        height: 30,
-                        color: AppColor.white,
-                      ),
-                    ),
-                  ),
-                ),
-              )
-                  : const Offstage(),
-            ),
-            Positioned(
-              bottom: 0,
-              child: Obx(
-                    () => Visibility(
-                  visible: (isVideoLoading == false),
-                  child: Container(
-                    height: Get.height / 4,
+                    color: AppColor.black,
+                    height: (Get.height - AppConstant.bottomBarSize),
                     width: Get.width,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppColor.transparent, AppColor.black.withOpacity(0.7)],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
+                    child: Obx(
+                      () {
+                        if (isVideoLoading.value || chewieController == null) {
+                          return Align(
+                            alignment: Alignment.bottomCenter,
+                            child: LinearProgressIndicator(color: AppColor.primary),
+                          );
+                        }
+
+                        return SizedBox.expand(
+                          child: FittedBox(
+                            fit: BoxFit.cover,
+                            child: SizedBox(
+                              width: videoPlayerController?.value.size.width ?? 0,
+                              height: videoPlayerController?.value.size.height ?? 0,
+                              child: Chewie(controller: chewieController!),
+                            ),
+                          ),
+                        );
+                      },
                     ),
+
                   ),
                 ),
-              ),
-            ),
-            Positioned(
-              right: 0,
-              child: Container(
-                padding: Platform.isAndroid ? EdgeInsets.only(top: 30) : EdgeInsets.only(top: 46),
-                height: Get.height,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CustomIconButton(
-                      circleSize: 40,
-                      iconSize: 25,
-                      icon: AppAsset.icCreate,
-                      callback: () {
-                        isReelsPage.value = false;
-                        VideoPickerBottomSheetUi.show(context: context);
-                      },
-                    ),
-                    5.width,
-                    GestureDetector(
-                      onTap: () {
-                        isReelsPage.value = false;
-                        ReportBottomSheetUi.show(context: context, eventId: controller.mainReels[widget.index].id ?? "", eventType: 1);
-                      },
-                      child: Container(
-                        height: 40,
-                        width: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
+                Positioned(
+                  top: MediaQuery.of(context).viewPadding.top + 15,
+                  left: 20,
+                  child: Visibility(
+                      visible: Utils.isShowWaterMark,
+                      child: CachedNetworkImage(
+                        imageUrl: Utils.waterMarkIcon,
+                        fit: BoxFit.contain,
+                        imageBuilder: (context, imageProvider) => Image(
+                          image: ResizeImage(imageProvider, width: Utils.waterMarkSize, height: Utils.waterMarkSize),
+                          fit: BoxFit.contain,
                         ),
-                        child: Icon(
-                          Icons.more_vert_rounded,
-                          color: AppColor.white,
-                          size: 30,
-                        ),
-                      ),
-                    ),
-                    8.width,
-                  ],
+                        placeholder: (context, url) => const Offstage(),
+                        errorWidget: (context, url, error) => const Offstage(),
+                      )),
                 ),
-              ),
-            ),
-            Positioned(
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.only(top: 30, bottom: 100),
-                height: Get.height,
-                child: Column(
-                  children: [
-                    const Spacer(),
-                    // GestureDetector(
-                     // onTap: () {
-                      //  Utils.showLog("Video User Id => ${controller.mainReels[widget.index].userId} => ${Database.loginUserId}");
-                       // if (controller.mainReels[widget.index].userId != Database.loginUserId) {
-                        //  isReelsPage.value = false;
-                        //  SendGiftOnVideoBottomSheetUi.show(
-                        //    context: context,
-                       //     videoId: controller.mainReels[widget.index].id ?? "",
-                       //   );
-                      //  } else {
-                      //    Utils.showToast(EnumLocal.txtYouCantSendGiftOwnVideo.name.tr);
-                     //   }
-                    //  },
-                   //   child: SizedBox(
-                   //     width: 65,
-                   //     child: Lottie.asset(AppAsset.lottieGift),
-                  //    ),
-                  //  ),
-
-                    // *************************************
-                    // NEW CART ICON ADDED HERE
-                    // *************************************
-                    5.height,
-                    GestureDetector(
-                      onTap: onClickCart,
+                Align(
+                  alignment: Alignment.center,
+                  child: SendGiftOnVideoBottomSheetUi.onShowGift(),
+                ),
+                Obx(
+                      () => Visibility(
+                    visible: isShowLikeAnimation.value,
+                    child: Align(alignment: Alignment.center, child: Lottie.asset(AppAsset.lottieLike, fit: BoxFit.cover, height: 300, width: 300)),
+                  ),
+                ),
+                Obx(
+                      () => isShowIcon.value
+                      ? Align(
+                    alignment: Alignment.center,
+                    child: GestureDetector(
+                      onTap: onClickPlayPause,
                       child: Container(
-                        height: 40,
-                        width: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                            Icons.shopping_cart, 
-                            color: Colors.white, 
-                            size: 32
-                        ),
-                      ),
-                    ),
-                    15.height,
-                    // *************************************
-
-                    Obx(
-                          () => SizedBox(
-                        height: 40,
-                        child: AnimatedContainer(
-                          duration: Duration(milliseconds: 300),
-                          height: isShowLikeIconAnimation.value ? 15 : 50,
-                          width: isShowLikeIconAnimation.value ? 15 : 50,
-                          alignment: Alignment.center,
-                          child: CustomIconButton(
-                            icon: AppAsset.icLike,
-                            callback: onClickLike,
-                            iconSize: 34,
-                            iconColor: isLike.value ? AppColor.colorRedContainer : AppColor.white,
+                        height: 70,
+                        width: 70,
+                        padding: EdgeInsets.only(left: isPlaying.value ? 0 : 2),
+                        decoration: BoxDecoration(color: AppColor.black.withOpacity(0.2), shape: BoxShape.circle),
+                        child: Center(
+                          child: Image.asset(
+                            isPlaying.value ? AppAsset.icPause : AppAsset.icPlay,
+                            width: 30,
+                            height: 30,
+                            color: AppColor.white,
                           ),
                         ),
                       ),
                     ),
-                    Obx(
-                          () => Text(
-                        CustomFormatNumber.convert(customChanges["like"]),
-                        style: AppFontStyle.styleW700(AppColor.white, 14),
-                      ),
-                    ),
-                    15.height,
-                    CustomIconButton(icon: AppAsset.icComment, circleSize: 40, callback: onClickComment, iconSize: 34),
-                    Obx(
-                          () => Text(
-                        CustomFormatNumber.convert(customChanges["comment"]),
-                        style: AppFontStyle.styleW700(AppColor.white, 14),
-                      ),
-                    ),
-                    15.height,
-                    CustomIconButton(
-                      circleSize: 40,
-                      icon: AppAsset.icShare,
-                      callback: onClickShare,
-                      iconSize: 32,
-                      iconColor: AppColor.white,
-                    ),
-                    Text(
-                      "",
-                      style: AppFontStyle.styleW700(AppColor.white, 14),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        if (controller.mainReels[widget.index].songId != "" && controller.mainReels[widget.index].songId != null) {
-                          isReelsPage.value = false;
-                          Get.toNamed(AppRoutes.audioWiseVideosPage, arguments: controller.mainReels[widget.index].songId);
-                        } else if (controller.mainReels[widget.index].userId != Database.loginUserId) {
-                          isReelsPage.value = false;
-                          PreviewProfileBottomSheetUi.show(
-                            context: context,
-                            userId: controller.mainReels[widget.index].userId ?? "",
-                          );
-                        } else {
-                          isReelsPage.value = false;
-                          final controller = Get.find<BottomBarController>();
-                          controller.onChangeBottomBar(4);
-                        }
-                      },
-                      child: SizedBox(
-                        width: 50,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          clipBehavior: Clip.none,
-                          children: [
-                            RotationTransition(turns: _animation, child: Image.asset(AppAsset.icMusicCd)),
-                            RotationTransition(
-                              turns: _animation,
-                              child: Container(
-                                width: 30,
-                                clipBehavior: Clip.antiAlias,
-                                decoration: BoxDecoration(shape: BoxShape.circle),
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    Image.asset(AppAsset.icProfilePlaceHolder),
-                                    PreviewNetworkImageUi(image: controller.mainReels[widget.index].userImage),
-                                    Visibility(
-                                      visible: controller.mainReels[widget.index].isProfileImageBanned ?? false,
-                                      child: AspectRatio(
-                                        aspectRatio: 1,
-                                        child: Container(
-                                          clipBehavior: Clip.antiAlias,
-                                          decoration: BoxDecoration(shape: BoxShape.circle),
-                                          child: BlurryContainer(
-                                            blur: 3,
-                                            borderRadius: BorderRadius.circular(50),
-                                            color: AppColor.black.withOpacity(0.3),
-                                            child: Offstage(),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              right: 4,
-                              bottom: -4,
-                              child: Image.asset(AppAsset.icMusic, width: 20),
-                            ),
-                          ],
+                  )
+                      : const Offstage(),
+                ),
+                Positioned(
+                  bottom: 0,
+                  child: Obx(
+                        () => Visibility(
+                      visible: (isVideoLoading == false),
+                      child: Container(
+                        height: Get.height / 4,
+                        width: Get.width,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [AppColor.transparent, AppColor.black.withOpacity(0.7)],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-            Positioned(
-              left: 15,
-              bottom: 20,
-              child: SizedBox(
-                height: 400,
-                width: Get.width / 1.5,
-                child: Align(
-                  alignment: Alignment.bottomLeft,
-                  child: SingleChildScrollView(
-                    child: Column(
+                Positioned(
+                  right: 0,
+                  child: Container(
+                    padding: Platform.isAndroid ? EdgeInsets.only(top: 30) : EdgeInsets.only(top: 46),
+                    height: Get.height,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        CustomIconButton(
+                          circleSize: 40,
+                          iconSize: 25,
+                          icon: AppAsset.icCreate,
+                          callback: () {
+                            isReelsPage.value = false;
+                            VideoPickerBottomSheetUi.show(context: context);
+                          },
+                        ),
+                        5.width,
                         GestureDetector(
                           onTap: () {
-                            if (controller.mainReels[widget.index].userId != Database.loginUserId) {
+                            isReelsPage.value = false;
+                            ReportBottomSheetUi.show(context: context, eventId: reelsController.mainReels[widget.index].id ?? "", eventType: 1);
+                          },
+                          child: Container(
+                            height: 40,
+                            width: 40,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.more_vert_rounded,
+                              color: AppColor.white,
+                              size: 30,
+                            ),
+                          ),
+                        ),
+                        8.width,
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.only(top: 30, bottom: 100),
+                    height: Get.height,
+                    child: Column(
+                      children: [
+                        const Spacer(),
+
+                        5.height,
+                        GestureDetector(
+                          onTap: onClickCart,
+                          child: Container(
+                            height: 40,
+                            width: 40,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                                Icons.shopping_cart, 
+                                color: Colors.white, 
+                                size: 32
+                            ),
+                          ),
+                        ),
+                        15.height,
+
+                        Obx(
+                              () => SizedBox(
+                            height: 40,
+                            child: AnimatedContainer(
+                              duration: Duration(milliseconds: 300),
+                              height: isShowLikeIconAnimation.value ? 15 : 50,
+                              width: isShowLikeIconAnimation.value ? 15 : 50,
+                              alignment: Alignment.center,
+                              child: CustomIconButton(
+                                icon: AppAsset.icLike,
+                                callback: onClickLike,
+                                iconSize: 34,
+                                iconColor: isLike.value ? AppColor.colorRedContainer : AppColor.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Obx(
+                              () => Text(
+                            CustomFormatNumber.convert(customChanges["like"]),
+                            style: AppFontStyle.styleW700(AppColor.white, 14),
+                          ),
+                        ),
+                        15.height,
+                        CustomIconButton(icon: AppAsset.icComment, circleSize: 40, callback: onClickComment, iconSize: 34),
+                        Obx(
+                              () => Text(
+                            CustomFormatNumber.convert(customChanges["comment"]),
+                            style: AppFontStyle.styleW700(AppColor.white, 14),
+                          ),
+                        ),
+                        15.height,
+                        CustomIconButton(
+                          circleSize: 40,
+                          icon: AppAsset.icShare,
+                          callback: onClickShare,
+                          iconSize: 32,
+                          iconColor: AppColor.white,
+                        ),
+                        Text(
+                          "",
+                          style: AppFontStyle.styleW700(AppColor.white, 14),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            if (reelsController.mainReels[widget.index].songId != "" && reelsController.mainReels[widget.index].songId != null) {
+                              isReelsPage.value = false;
+                              Get.toNamed(AppRoutes.audioWiseVideosPage, arguments: reelsController.mainReels[widget.index].songId);
+                            } else if (reelsController.mainReels[widget.index].userId != Database.loginUserId) {
                               isReelsPage.value = false;
                               PreviewProfileBottomSheetUi.show(
                                 context: context,
-                                userId: controller.mainReels[widget.index].userId ?? "",
+                                userId: reelsController.mainReels[widget.index].userId ?? "",
                               );
                             } else {
                               isReelsPage.value = false;
@@ -777,98 +693,177 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
                               controller.onChangeBottomBar(4);
                             }
                           },
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                height: 46,
-                                width: 46,
-                                clipBehavior: Clip.antiAlias,
-                                decoration: const BoxDecoration(shape: BoxShape.circle),
-                                child: Stack(
-                                  children: [
-                                    AspectRatio(aspectRatio: 1, child: Image.asset(AppAsset.icProfilePlaceHolder)),
-                                    AspectRatio(aspectRatio: 1, child: PreviewNetworkImageUi(image: controller.mainReels[widget.index].userImage)),
-                                    Visibility(
-                                      visible: controller.mainReels[widget.index].isProfileImageBanned ?? false,
-                                      child: AspectRatio(
-                                        aspectRatio: 1,
-                                        child: Container(
-                                          clipBehavior: Clip.antiAlias,
-                                          decoration: BoxDecoration(shape: BoxShape.circle),
-                                          child: BlurryContainer(
-                                            blur: 3,
-                                            borderRadius: BorderRadius.circular(50),
-                                            color: AppColor.black.withOpacity(0.3),
-                                            child: Offstage(),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              10.width,
-                              Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(
-                                    width: Get.width / 2,
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.start,
+                          child: SizedBox(
+                            width: 50,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              clipBehavior: Clip.none,
+                              children: [
+                                RotationTransition(turns: _animation, child: Image.asset(AppAsset.icMusicCd)),
+                                RotationTransition(
+                                  turns: _animation,
+                                  child: Container(
+                                    width: 30,
+                                    clipBehavior: Clip.antiAlias,
+                                    decoration: BoxDecoration(shape: BoxShape.circle),
+                                    child: Stack(
+                                      alignment: Alignment.center,
                                       children: [
-                                        Text(
-                                          maxLines: 1,
-                                          controller.mainReels[widget.index].name ?? "",
-                                          style: AppFontStyle.styleW600(AppColor.white, 16.5),
-                                        ),
+                                        Image.asset(AppAsset.icProfilePlaceHolder),
+                                        PreviewNetworkImageUi(image: reelsController.mainReels[widget.index].userImage),
                                         Visibility(
-                                          visible: controller.mainReels[widget.index].isVerified ?? false,
-                                          child: Padding(
-                                            padding: const EdgeInsets.only(left: 3),
-                                            child: Image.asset(AppAsset.icBlueTick, width: 20),
+                                          visible: reelsController.mainReels[widget.index].isProfileImageBanned ?? false,
+                                          child: AspectRatio(
+                                            aspectRatio: 1,
+                                            child: Container(
+                                              clipBehavior: Clip.antiAlias,
+                                              decoration: BoxDecoration(shape: BoxShape.circle),
+                                              child: BlurryContainer(
+                                                blur: 3,
+                                                borderRadius: BorderRadius.circular(50),
+                                                color: AppColor.black.withOpacity(0.3),
+                                                child: Offstage(),
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  SizedBox(
-                                    width: Get.width / 2,
-                                    child: Text(
-                                      maxLines: 1,
-                                      controller.mainReels[widget.index].userName ?? "",
-                                      style: AppFontStyle.styleW500(AppColor.white, 13),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        10.height,
-                        Visibility(
-                          visible: controller.mainReels[widget.index].caption?.trim().isNotEmpty ?? false,
-                          child: ReadMoreText(
-                            controller.mainReels[widget.index].caption ?? "",
-                            trimMode: TrimMode.Line,
-                            trimLines: 3,
-                            style: AppFontStyle.styleW500(AppColor.white, 13),
-                            colorClickableText: AppColor.primary,
-                            trimCollapsedText: ' Show more',
-                            trimExpandedText: ' Show less',
-                            moreStyle: AppFontStyle.styleW500(AppColor.primary, 13.5),
+                                ),
+                                Positioned(
+                                  right: 4,
+                                  bottom: -4,
+                                  child: Image.asset(AppAsset.icMusic, width: 20),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-              ),
+                Positioned(
+                  left: 15,
+                  bottom: 20,
+                  child: SizedBox(
+                    height: 400,
+                    width: Get.width / 1.5,
+                    child: Align(
+                      alignment: Alignment.bottomLeft,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                if (reelsController.mainReels[widget.index].userId != Database.loginUserId) {
+                                  isReelsPage.value = false;
+                                  PreviewProfileBottomSheetUi.show(
+                                    context: context,
+                                    userId: reelsController.mainReels[widget.index].userId ?? "",
+                                  );
+                                } else {
+                                  isReelsPage.value = false;
+                                  final controller = Get.find<BottomBarController>();
+                                  controller.onChangeBottomBar(4);
+                                }
+                              },
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    height: 46,
+                                    width: 46,
+                                    clipBehavior: Clip.antiAlias,
+                                    decoration: const BoxDecoration(shape: BoxShape.circle),
+                                    child: Stack(
+                                      children: [
+                                        AspectRatio(aspectRatio: 1, child: Image.asset(AppAsset.icProfilePlaceHolder)),
+                                        AspectRatio(aspectRatio: 1, child: PreviewNetworkImageUi(image: reelsController.mainReels[widget.index].userImage)),
+                                        Visibility(
+                                          visible: reelsController.mainReels[widget.index].isProfileImageBanned ?? false,
+                                          child: AspectRatio(
+                                            aspectRatio: 1,
+                                            child: Container(
+                                              clipBehavior: Clip.antiAlias,
+                                              decoration: BoxDecoration(shape: BoxShape.circle),
+                                              child: BlurryContainer(
+                                                blur: 3,
+                                                borderRadius: BorderRadius.circular(50),
+                                                color: AppColor.black.withOpacity(0.3),
+                                                child: Offstage(),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  10.width,
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      SizedBox(
+                                        width: Get.width / 2,
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              maxLines: 1,
+                                              reelsController.mainReels[widget.index].name ?? "",
+                                              style: AppFontStyle.styleW600(AppColor.white, 16.5),
+                                            ),
+                                            Visibility(
+                                              visible: reelsController.mainReels[widget.index].isVerified ?? false,
+                                              child: Padding(
+                                                padding: const EdgeInsets.only(left: 3),
+                                                child: Image.asset(AppAsset.icBlueTick, width: 20),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: Get.width / 2,
+                                        child: Text(
+                                          maxLines: 1,
+                                          reelsController.mainReels[widget.index].userName ?? "",
+                                          style: AppFontStyle.styleW500(AppColor.white, 13),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            10.height,
+                            Visibility(
+                              visible: reelsController.mainReels[widget.index].caption?.trim().isNotEmpty ?? false,
+                              child: ReadMoreText(
+                                reelsController.mainReels[widget.index].caption ?? "",
+                                trimMode: TrimMode.Line,
+                                trimLines: 3,
+                                style: AppFontStyle.styleW500(AppColor.white, 13),
+                                colorClickableText: AppColor.primary,
+                                trimCollapsedText: ' Show more',
+                                trimExpandedText: ' Show less',
+                                moreStyle: AppFontStyle.styleW500(AppColor.primary, 13.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
-}
