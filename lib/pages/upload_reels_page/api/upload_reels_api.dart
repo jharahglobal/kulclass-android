@@ -57,10 +57,12 @@ class UploadReelsApi {
           responseType: dio_lib.ResponseType.json,
         ),
         onSendProgress: (sent, total) {
-          if (total != -1) {
+          if (total > 0) {
             double progress = (sent / total) * 100;
-            // Update percentage string live on the UI window frame
             onProgressUpdate("${progress.toStringAsFixed(0)}%");
+          } else {
+            // Fallback string if the stream is too small or fast for total length tracking
+            onProgressUpdate("Finalizing...");
           }
         },
       );
