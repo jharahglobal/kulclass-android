@@ -559,11 +559,37 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
                   )
                       : const Offstage(),
                 ),
+                // --- INTERACTIVE VIDEO PROGRESS SLIDER LAYER ---
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Obx(
+                    () => Visibility(
+                      visible: (isVideoLoading.value == false && videoPlayerController != null),
+                      child: Container(
+                        width: Get.width,
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        color: Colors.black12,
+                        child: VideoProgressIndicator(
+                          videoPlayerController!,
+                          allowScrubbing: true, // Allows the user to drag to rewind or forward
+                          colors: VideoProgressColors(
+                            playedColor: AppColor.primary, // Color for the watched track portion
+                            bufferedColor: Colors.white.withOpacity(0.3), // Color for buffered video
+                            backgroundColor: Colors.white.withOpacity(0.15), // Color for unplayed track
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
                 Positioned(
                   bottom: 0,
                   child: Obx(
-                        () => Visibility(
-                      visible: (isVideoLoading == false),
+                    () => Visibility(
+                      visible: (isVideoLoading.value == false),
                       child: Container(
                         height: Get.height / 4,
                         width: Get.width,
