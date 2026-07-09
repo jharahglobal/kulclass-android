@@ -460,21 +460,29 @@ else {
           // Step 2: Upload direct file stream to Bunny.net storage
           final videoFileBytes = await File(finalVideoPath).readAsBytes();
           
+          // Step 2: Upload direct file stream to Bunny.net storage
+          final File videoFile = File(finalVideoPath);
+          final int videoFileSize = videoFile.lengthSync();
+          
           await dio.put(
             "https://video.bunnycdn.com/library/$libraryId/videos/$bunnyVideoId",
-            data: Stream.fromIterable(videoFileBytes.map((e) => [e])),
+            data: videoFile.openRead(), // Stream the file directly from disk without blowing up memory
             options: dio_lib.Options(
               headers: {
                 "AccessKey": bunnyApiKey,
                 "Content-Type": "application/octet-stream",
+                "Content-Length": videoFileSize, // Explicitly pass size so Dio can compute transmission increments
               },
             ),
             onSendProgress: (sent, total) {
-              if (total != -1) {
-                double progress = (sent / total) * 100;
-                uploadProgressPercentage.value = "Uploading: ${progress.toStringAsFixed(0)}%";
-                uploadProgress.value = 0.70 + ((progress / 100) * 0.25);
-              }
+              final effectiveTotal = total > 0 ? total : videoFileSize;
+              double progress = (sent / effectiveTotal) * 100;
+              
+              // Clamp progress between 0 and 100 to ensure smooth rendering
+              progress = progress.clamp(0.0, 100.0);
+              
+              uploadProgressPercentage.value = "Uploading: ${progress.toStringAsFixed(0)}%";
+              uploadProgress.value = 0.70 + ((progress / 100) * 0.25);
             },
           );
 
