@@ -119,9 +119,14 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
       String videoPath = controller.mainReels[widget.index].videoUrl!;
 
       // Check if it's already a full network link (e.g. from Bunny.net) or a legacy local server path
-      final Uri videoUri = videoPath.startsWith('http') 
-          ? Uri.parse(videoPath) 
+      String videoPath = controller.mainReels[widget.index].videoUrl!.trim();
+
+      // Absolute safety check: If it contains 'http', parse it directly no matter what characters start the string
+      final Uri videoUri = videoPath.contains('http') 
+          ? Uri.parse(videoPath.substring(videoPath.indexOf('http'))) 
           : Uri.parse(Api.baseUrl + videoPath);
+
+      Utils.showLog("🎯 Final Initialized Video URL: $videoUri");
 
       videoPlayerController = VideoPlayerController.networkUrl(videoUri);
 
