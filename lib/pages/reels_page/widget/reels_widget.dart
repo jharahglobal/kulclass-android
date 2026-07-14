@@ -65,11 +65,15 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
   RxBool isShowLikeAnimation = false.obs;
   RxBool isShowLikeIconAnimation = false.obs;
 
-  RxBool isReelsPage = true.obs; 
+  RxBool isReelsPage = true.obs;
 
   RxBool isLike = false.obs;
 
   RxMap customChanges = {"like": 0, "comment": 0}.obs;
+
+  Rx<Duration> videoPosition = Duration.zero.obs;
+
+  AnimationController? _controller;
 
   AnimationController? _controller;
   late Animation<double> _animation;
@@ -103,7 +107,9 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
     (videoPlayerController?.value.isBuffering ?? false)
         ? isBuffering.value = true
         : isBuffering.value = false;
-
+    if (videoPlayerController != null) {
+      videoPosition.value = videoPlayerController!.value.position;
+    }
     if (isReelsPage.value == false) {
       onStopVideo();
     }
@@ -115,7 +121,7 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
       if (widget.index >= controller.mainReels.length || controller.mainReels[widget.index] == null) {
         return;
       }
-      
+
       // Fixed: Only declare videoPath once, cleanly trimming the string
       String videoPath = controller.mainReels[widget.index].videoUrl!.trim();
 
@@ -154,7 +160,7 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
 
         if (chewieController != null) {
           isVideoLoading.value = false;
-          (widget.index == widget.currentPageIndex && isReelsPage.value) ? onPlayVideo() : null; 
+          (widget.index == widget.currentPageIndex && isReelsPage.value) ? onPlayVideo() : null;
         } else {
           isVideoLoading.value = true;
         }
@@ -210,21 +216,21 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
       isShowIcon.value = false;
     }
     if (isReelsPage.value == false) {
-      isReelsPage.value = true; 
+      isReelsPage.value = true;
     }
   }
 
   void onClickPlayPause() async {
     videoPlayerController!.value.isPlaying ? onStopVideo() : onPlayVideo();
     if (isReelsPage.value == false) {
-      isReelsPage.value = true; 
+      isReelsPage.value = true;
     }
   }
 
   Future<void> onClickShare() async {
     isReelsPage.value = false;
 
-    Get.dialog(const LoadingUi(), barrierDismissible: false); 
+    Get.dialog(const LoadingUi(), barrierDismissible: false);
 
     await BranchIoServices.onCreateBranchIoLink(
       id: controller.mainReels[widget.index].id ?? "",
@@ -236,7 +242,7 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
 
     final link = await BranchIoServices.onGenerateLink();
 
-    Get.back(); 
+    Get.back();
 
     if (link != null) {
       CustomShare.onShareLink(link: link);
@@ -307,7 +313,7 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
     // 2. ✅ GET COIN FROM CUSTOM CLASS (The Fix)
     // We use the static reactive variable. It defaults to 0 if not set.
     final int userCoin = CustomFetchUserCoin.coin.value;
-    
+
     // 2. Get Reel Poster's Details (User ID and Name)
     final shopUserId = controller.mainReels[widget.index].userId ?? '';
     final shopName = controller.mainReels[widget.index].name ?? ''; // Or use .userName for the handle
@@ -315,7 +321,7 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
     // 3. Construct URL
     // Sending both ID and Name so the web page can use whichever it needs
     final webUrl = "https://kulclass.com/shop/buy.php?userEmail=$userEmail&userCoin=$userCoin&shopUserId=$shopUserId&shopName=$shopName";
-    
+
     Utils.showLog("Opening Shop URL: $webUrl");
 
     // 4. Open WebView
@@ -333,7 +339,7 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
         fullscreenDialog: true,
         builder: (_) {
           bool isLoading = true;
-          
+
           // --- WEBVIEW CONTROLLER SETUP ---
           final webController = WebViewController()
             ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -342,27 +348,27 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
                 onPageFinished: (_) {
                   // We need to update the UI (loader) safely
                   // Note: In a stateless/builder context, we might need a safer way to update state,
-                  // but for this specific structure, we update the builder's state if possible, 
-                  // or relying on the initial load. 
+                  // but for this specific structure, we update the builder's state if possible,
+                  // or relying on the initial load.
                   // Ideally, use a ValueNotifier for isLoading to avoid complex State logic here.
-                  isLoading = false; 
+                  isLoading = false;
                 },
-                
+
                 // === NEW: INTERCEPT LINKS (The Fix) ===
                 onNavigationRequest: (NavigationRequest request) async {
                   final String url = request.url;
-                  
+
                   // 1. Check for External App Schemes
-                  if (url.startsWith('whatsapp:') || 
-                      url.startsWith('intent:') || 
+                  if (url.startsWith('whatsapp:') ||
+                      url.startsWith('intent:') ||
                       url.contains('api.whatsapp.com') ||
                       url.contains('wa.me') ||
-                      url.startsWith('tg:') || 
-                      url.startsWith('tel:') || 
+                      url.startsWith('tg:') ||
+                      url.startsWith('tel:') ||
                       url.startsWith('mailto:')) {
-                    
+
                     final Uri uri = Uri.parse(url);
-                    
+
                     // 2. Open Outside the App (in WhatsApp/Telegram/Dialer)
                     try {
                       // We force externalApplication mode
@@ -370,11 +376,11 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
                     } catch (e) {
                       debugPrint("Could not launch external app: $e");
                     }
-                    
+
                     // 3. STOP WebView from trying to load it (prevents crash)
-                    return NavigationDecision.prevent; 
+                    return NavigationDecision.prevent;
                   }
-                  
+
                   // Allow normal websites to load
                   return NavigationDecision.navigate;
                 },
@@ -387,19 +393,19 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
               // We inject a listener to refresh the loader state when page finishes
               // This is a quick dirty fix to make the loader disappear inside StatefulBuilder
               webController.setNavigationDelegate(
-                 NavigationDelegate(
-                    onPageFinished: (_) {
-                      if(context.mounted) {
-                        setState(() { isLoading = false; });
-                      }
-                    },
-                    // Re-attach the interception logic here because setNavigationDelegate overrides the previous one
-                    onNavigationRequest: (NavigationRequest request) async {
+                  NavigationDelegate(
+                      onPageFinished: (_) {
+                        if(context.mounted) {
+                          setState(() { isLoading = false; });
+                        }
+                      },
+                      // Re-attach the interception logic here because setNavigationDelegate overrides the previous one
+                      onNavigationRequest: (NavigationRequest request) async {
                         final String url = request.url;
-                        if (url.startsWith('whatsapp:') || 
-                            url.startsWith('intent:') || 
+                        if (url.startsWith('whatsapp:') ||
+                            url.startsWith('intent:') ||
                             url.contains('api.whatsapp.com') ||
-                            url.startsWith('tg:') || 
+                            url.startsWith('tg:') ||
                             url.startsWith('tel:')) {
                           try {
                             await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
@@ -407,8 +413,8 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
                           return NavigationDecision.prevent;
                         }
                         return NavigationDecision.navigate;
-                    }
-                 )
+                      }
+                  )
               );
 
               return Scaffold(
@@ -451,7 +457,7 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
   // NEW CART LOGIC END
   // --------------------------------------------------------
 
- @override
+  @override
   Widget build(BuildContext context) {
     return GetBuilder<ReelsController>(
       id: "onGetReels",
@@ -469,9 +475,9 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
           (isVideoLoading.value == false && isReelsPage.value) ? onPlayVideo() : null;
         } else {
           isVideoLoading.value == false ? videoPlayerController?.seekTo(Duration.zero) : null;
-          onStopVideo(); 
+          onStopVideo();
         }
-        
+
         return Scaffold(
           body: SizedBox(
             height: Get.height,
@@ -486,7 +492,7 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
                     height: (Get.height - AppConstant.bottomBarSize),
                     width: Get.width,
                     child: Obx(
-                      () {
+                          () {
                         if (isVideoLoading.value || chewieController == null) {
                           return Align(
                             alignment: Alignment.bottomCenter,
@@ -561,67 +567,11 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
                 ),
                 // --- INTERACTIVE VIDEO PROGRESS SLIDER LAYER ---
                 // --- CUSTOM INTERACTIVE VIDEO PROGRESS SLIDER & TIMERS ---
-                Positioned(
-                  bottom: 10, // Lifted slightly off the very bottom edge so it sits perfectly above the navigation bar
-                  left: 15,
-                  right: 15,
-                  child: Obx(
-                    () => Visibility(
-                      visible: (isVideoLoading.value == false && videoPlayerController != null),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Theme(
-                            data: ThemeData(
-                              sliderTheme: SliderThemeData(
-                                trackHeight: 4,
-                                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                                overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-                                activeTrackColor: AppColor.primary,
-                                inactiveTrackColor: Colors.white.withOpacity(0.3),
-                                thumbColor: AppColor.primary,
-                                overlayColor: AppColor.primary.withOpacity(0.2),
-                              ),
-                            ),
-                            child: Slider(
-                              value: videoPlayerController!.value.position.inMilliseconds.toDouble().clamp(
-                                    0.0,
-                                    videoPlayerController!.value.duration.inMilliseconds.toDouble(),
-                                  ),
-                              min: 0.0,
-                              max: videoPlayerController!.value.duration.inMilliseconds.toDouble() == 0.0
-                                  ? 1.0
-                                  : videoPlayerController!.value.duration.inMilliseconds.toDouble(),
-                              onChanged: (value) {
-                                videoPlayerController!.seekTo(Duration(milliseconds: value.toInt()));
-                              },
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 22),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  _formatDuration(videoPlayerController!.value.position),
-                                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                                ),
-                                Text(
-                                  _formatDuration(videoPlayerController!.value.duration),
-                                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+
                 Positioned(
                   bottom: 0,
                   child: Obx(
-                    () => Visibility(
+                        () => Visibility(
                       visible: (isVideoLoading.value == false),
                       child: Container(
                         height: Get.height / 4,
@@ -698,8 +648,8 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
-                                Icons.shopping_cart, 
-                                color: Colors.white, 
+                                Icons.shopping_cart,
+                                color: Colors.white,
                                 size: 32
                             ),
                           ),
@@ -929,6 +879,66 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
                             ),
                           ],
                         ),
+                      ),
+                    ),
+                  ),
+                ),
+                // --- CUSTOM INTERACTIVE VIDEO PROGRESS SLIDER (PLACED LAST TO PREVENT INTERFERENCE) ---
+                Positioned(
+                  bottom: 5, // Lays cleanly above bottom navigation bar without overlapping labels
+                  left: 0,
+                  right: 0,
+                  child: Obx(
+                        () => Visibility(
+                      visible: (isVideoLoading.value == false && videoPlayerController != null),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Theme(
+                            data: ThemeData(
+                              sliderTheme: SliderThemeData(
+                                trackHeight: 3,
+                                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+                                overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
+                                activeTrackColor: AppColor.primary,
+                                inactiveTrackColor: Colors.white.withOpacity(0.25),
+                                thumbColor: AppColor.primary,
+                                overlayColor: AppColor.primary.withOpacity(0.2),
+                              ),
+                            ),
+                            child: Slider(
+                              value: videoPosition.value.inMilliseconds.toDouble().clamp(
+                                0.0,
+                                videoPlayerController!.value.duration.inMilliseconds.toDouble(),
+                              ),
+                              min: 0.0,
+                              max: videoPlayerController!.value.duration.inMilliseconds.toDouble() == 0.0
+                                  ? 1.0
+                                  : videoPlayerController!.value.duration.inMilliseconds.toDouble(),
+                              onChanged: (value) {
+                                final target = Duration(milliseconds: value.toInt());
+                                videoPlayerController!.seekTo(target);
+                                videoPosition.value = target; // Instant slide UI responsiveness
+                              },
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _formatDuration(videoPosition.value),
+                                  style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  _formatDuration(videoPlayerController!.value.duration),
+                                  style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
