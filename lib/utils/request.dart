@@ -117,14 +117,14 @@ class AppRequest {
     });
     if (!cam) return;
 
-    bool audio = await audioPermission();
-    if (!audio) return;
+    // REMOVED audioPermission() check here because READ_MEDIA_AUDIO was stripped 
+    // from the Android Manifest to comply with Google Play Console requirements.
 
     // Optional: storage or phone, depending on your use case
     // bool store = await storagePermission();
     // if (!store) return;
 
-    onGranted?.call(); // ✅ All required permissions granted
+    onGranted?.call(); // ✅ All required live streaming permissions granted
   }
 
 }
