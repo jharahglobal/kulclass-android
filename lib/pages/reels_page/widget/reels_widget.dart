@@ -73,7 +73,7 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
 
   Rx<Duration> videoPosition = Duration.zero.obs;
 
-  AnimationController? _controller;
+   
 
   AnimationController? _controller;
   late Animation<double> _animation;
