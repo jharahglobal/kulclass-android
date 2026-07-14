@@ -58,6 +58,15 @@ android {
             abiFilters "armeabi-v7a", "arm64-v8a", "x86_64"
         }
 
+        // --- INJECT 16 KB COMPILATION FLAGS FOR NATIVE COMPONENT PLUGINS ---
+        externalNativeBuild {
+            ndkBuild {
+                arguments "APP_CFLAGS+=-DPAGE_SIZE=16384", "APP_LDFLAGS+=-Wl,-z,max-page-size=16384"
+            }
+            cmake {
+                arguments "-DCMAKE_C_FLAGS=-DPAGE_SIZE=16384", "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384"
+            }
+        }
     }
 
     signingConfigs {
