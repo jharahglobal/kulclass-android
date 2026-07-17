@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart'; // for kIsWeb
 
 import 'package:blurrycontainer/blurrycontainer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -39,7 +40,8 @@ import 'package:auralive/utils/font_style.dart';
 import 'package:auralive/utils/utils.dart';
 import 'package:vibration/vibration.dart';
 // Swapped to cached_video_player_plus import to support local caching
-import 'package:cached_video_player_plus/cached_video_player_plus.dart';
+import 'package:cached_video_player_plus/cached_video_player_plus.dart'; 
+import 'package:video_player/video_player.dart'; // Add this to resolve VideoPlayerOptions
 
 class PreviewReelsView extends StatefulWidget {
   const PreviewReelsView({super.key, required this.index, required this.currentPageIndex});
