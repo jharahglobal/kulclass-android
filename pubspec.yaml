@@ -137,7 +137,7 @@ dependency_overrides:
   device_info_plus: 11.0.0   # upgraded to fix web conflict
   share_plus: 10.0.2
   package_info_plus: 8.0.2
-  shared_preferences: 2.2.2
+  shared_preferences: ^2.3.0 
   path: ^1.9.1
   http: ^1.0.0
 
