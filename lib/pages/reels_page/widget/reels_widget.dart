@@ -182,7 +182,7 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
 
   void onStopVideo() {
     isPlaying.value = false;
-    videoPlayerController?.pause();
+    videoPlayerController?.controller.pause();
   }
 
   void onPlayVideo() {
@@ -939,7 +939,7 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
                                   style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
                                 ),
                                 Text(
-                                  _formatDuration(videoPlayerController!.value.duration),
+                                  _formatDuration(videoPlayerController!.controller.value.duration),
                                   style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
                                 ),
                               ],
