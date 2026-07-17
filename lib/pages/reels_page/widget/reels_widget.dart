@@ -58,7 +58,7 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
 
   ChewieController? chewieController;
   // Changed controller type to support CachedVideoPlayerPlus
-  CachedVideoPlayerPlusController? videoPlayerController;
+  CachedVideoPlayerPlus? videoPlayerController;
 
   RxBool isPlaying = true.obs;
   RxBool isShowIcon = false.obs;
@@ -141,7 +141,8 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
       Utils.showLog("🎯 Final Initialized Video URL: $videoUri");
 
       // Changed to networkUrl under CachedVideoPlayerPlusController with custom caching parameters
-      videoPlayerController = CachedVideoPlayerPlusController.networkUrl(
+      // Changed to CachedVideoPlayerPlus.networkUrl to match package v4.x API standards
+      videoPlayerController = CachedVideoPlayerPlus.networkUrl(
         videoUri,
         invalidateCacheIfOlderThan: const Duration(days: 7), // Automatically caches the video on disk
         videoPlayerOptions: VideoPlayerOptions(
@@ -914,9 +915,9 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
                             ),
                             child: Slider(
                               value: videoPosition.value.inMilliseconds.toDouble().clamp(
-                                0.0,
-                                videoPlayerController!.value.duration.inMilliseconds.toDouble(),
-                              ),
+  0.0,
+  videoPlayerController!.controller.value.duration.inMilliseconds.toDouble(),
+).toDouble(),
                               min: 0.0,
                               max: videoPlayerController!.value.duration.inMilliseconds.toDouble() == 0.0
                                   ? 1.0
