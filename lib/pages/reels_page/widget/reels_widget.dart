@@ -108,11 +108,11 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
   }
 
   void _videoListener() {
-    (videoPlayerController?.value.isBuffering ?? false)
+    (videoPlayerController?.controller.value.isBuffering ?? false)
         ? isBuffering.value = true
         : isBuffering.value = false;
     if (videoPlayerController != null) {
-      videoPosition.value = videoPlayerController!.value.position;
+      videoPosition.value = videoPlayerController!.controller.value.position;
     }
     if (isReelsPage.value == false) {
       onStopVideo();
@@ -153,10 +153,10 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
 
       await videoPlayerController?.initialize();
 
-      if (videoPlayerController != null && (videoPlayerController?.value.isInitialized ?? false)) {
+      if (videoPlayerController != null && (videoPlayerController?.controller.value.isInitialized ?? false)) {
         // Chewie is fully compatible with CachedVideoPlayerPlus controllers
         chewieController = ChewieController(
-          videoPlayerController: videoPlayerController!,
+          videoPlayerController: videoPlayerController!.controller,
           looping: true,
           allowedScreenSleep: false,
           allowMuting: false,
@@ -172,7 +172,7 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
           isVideoLoading.value = true;
         }
 
-        videoPlayerController?.addListener(_videoListener);
+        videoPlayerController?.controller.addListener(_videoListener);
       }
     } catch (e) {
       onDisposeVideoPlayer();
@@ -187,14 +187,14 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
 
   void onPlayVideo() {
     isPlaying.value = true;
-    videoPlayerController?.play();
+    videoPlayerController?.controller.play();
   }
 
   void onDisposeVideoPlayer() {
     try {
       if (videoPlayerController != null) {
-        videoPlayerController?.removeListener(_videoListener);
-        videoPlayerController?.pause();
+        videoPlayerController?.controller.removeListener(_videoListener);
+        videoPlayerController?.controller.pause();
         videoPlayerController?.dispose();
         videoPlayerController = null;
       }
@@ -217,7 +217,7 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
 
   void onClickVideo() async {
     if (isVideoLoading.value == false) {
-      videoPlayerController!.value.isPlaying ? onStopVideo() : onPlayVideo();
+      videoPlayerController!.controller.value.isPlaying ? onStopVideo() : onPlayVideo();
       isShowIcon.value = true;
       await 2.seconds.delay();
       isShowIcon.value = false;
@@ -228,7 +228,7 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
   }
 
   void onClickPlayPause() async {
-    videoPlayerController!.value.isPlaying ? onStopVideo() : onPlayVideo();
+    videoPlayerController!.controller.value.isPlaying ? onStopVideo() : onPlayVideo();
     if (isReelsPage.value == false) {
       isReelsPage.value = true;
     }
@@ -481,7 +481,7 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
           isReadMore.value = false;
           (isVideoLoading.value == false && isReelsPage.value) ? onPlayVideo() : null;
         } else {
-          isVideoLoading.value == false ? videoPlayerController?.seekTo(Duration.zero) : null;
+          isVideoLoading.value == false ? videoPlayerController?.controller.seekTo(Duration.zero) : null;
           onStopVideo();
         }
 
@@ -511,8 +511,8 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
                           child: FittedBox(
                             fit: BoxFit.cover,
                             child: SizedBox(
-                              width: videoPlayerController?.value.size.width ?? 0,
-                              height: videoPlayerController?.value.size.height ?? 0,
+                              width: videoPlayerController?.controller.value.size.width ?? 0,
+                              height: videoPlayerController?.controller.value.size.height ?? 0,
                               child: Chewie(controller: chewieController!),
                             ),
                           ),
@@ -915,16 +915,16 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
                             ),
                             child: Slider(
                               value: videoPosition.value.inMilliseconds.toDouble().clamp(
-  0.0,
-  videoPlayerController!.controller.value.duration.inMilliseconds.toDouble(),
-).toDouble(),
+                                0.0,
+                                videoPlayerController!.controller.value.duration.inMilliseconds.toDouble(),
+                              ).toDouble(), // Explicit double cast resolves the compilation error
                               min: 0.0,
-                              max: videoPlayerController!.value.duration.inMilliseconds.toDouble() == 0.0
+                              max: videoPlayerController!.controller.value.duration.inMilliseconds.toDouble() == 0.0
                                   ? 1.0
-                                  : videoPlayerController!.value.duration.inMilliseconds.toDouble(),
+                                  : videoPlayerController!.controller.value.duration.inMilliseconds.toDouble(),
                               onChanged: (value) {
                                 final target = Duration(milliseconds: value.toInt());
-                                videoPlayerController!.seekTo(target);
+                                videoPlayerController!.controller.seekTo(target);
                                 videoPosition.value = target; // Instant slide UI responsiveness
                               },
                             ),
