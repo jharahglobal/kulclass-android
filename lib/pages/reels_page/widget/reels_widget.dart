@@ -38,7 +38,8 @@ import 'package:auralive/utils/enums.dart';
 import 'package:auralive/utils/font_style.dart';
 import 'package:auralive/utils/utils.dart';
 import 'package:vibration/vibration.dart';
-import 'package:video_player/video_player.dart';
+// Swapped to cached_video_player_plus import to support local caching
+import 'package:cached_video_player_plus/cached_video_player_plus.dart';
 
 class PreviewReelsView extends StatefulWidget {
   const PreviewReelsView({super.key, required this.index, required this.currentPageIndex});
@@ -54,7 +55,8 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
   final controller = Get.find<ReelsController>();
 
   ChewieController? chewieController;
-  VideoPlayerController? videoPlayerController;
+  // Changed controller type to support CachedVideoPlayerPlus
+  CachedVideoPlayerPlusController? videoPlayerController;
 
   RxBool isPlaying = true.obs;
   RxBool isShowIcon = false.obs;
@@ -136,9 +138,10 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
 
       Utils.showLog("🎯 Final Initialized Video URL: $videoUri");
 
-      // Configured with network player settings optimized for low-latency chunks
-      videoPlayerController = VideoPlayerController.networkUrl(
+      // Changed to networkUrl under CachedVideoPlayerPlusController with custom caching parameters
+      videoPlayerController = CachedVideoPlayerPlusController.networkUrl(
         videoUri,
+        invalidateCacheIfOlderThan: const Duration(days: 7), // Automatically caches the video on disk
         videoPlayerOptions: VideoPlayerOptions(
           allowBackgroundPlayback: false,
           mixWithOthers: true,
@@ -148,6 +151,7 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
       await videoPlayerController?.initialize();
 
       if (videoPlayerController != null && (videoPlayerController?.value.isInitialized ?? false)) {
+        // Chewie is fully compatible with CachedVideoPlayerPlus controllers
         chewieController = ChewieController(
           videoPlayerController: videoPlayerController!,
           looping: true,
@@ -350,7 +354,7 @@ class _PreviewReelsViewState extends State<PreviewReelsView> with SingleTickerPr
                   // Note: In a stateless/builder context, we might need a safer way to update state,
                   // but for this specific structure, we update the builder's state if possible,
                   // or relying on the initial load.
-                  // Ideally, use a ValueNotifier for isLoading to avoid complex State logic here.
+                  // Exactly using a ValueNotifier for isLoading to avoid complex State logic here.
                   isLoading = false;
                 },
 
