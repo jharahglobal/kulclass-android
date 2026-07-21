@@ -32,6 +32,7 @@ import 'package:auralive/utils/enums.dart';
 import 'package:auralive/utils/font_style.dart';
 import 'package:auralive/utils/utils.dart';
 import 'package:vibration/vibration.dart';
+import 'package:cached_video_player_plus/cached_video_player_plus.dart';
 import 'package:video_player/video_player.dart';
 import 'package:auralive/utils/api.dart';
 
@@ -49,7 +50,7 @@ class _PreviewShortsViewState extends State<PreviewShortsView> with SingleTicker
   final controller = Get.find<PreviewShortsVideoController>();
 
   ChewieController? chewieController;
-  VideoPlayerController? videoPlayerController;
+  CachedVideoPlayerPlus? videoPlayerController;
 
   RxBool isPlaying = true.obs;
   RxBool isShowIcon = false.obs;
@@ -106,14 +107,20 @@ final url = videoPath.startsWith("http")
     ? videoPath
     : Api.baseUrl + videoPath;
 
-videoPlayerController =
-    VideoPlayerController.networkUrl(Uri.parse(url));
+videoPlayerController = CachedVideoPlayerPlus.networkUrl(
+    Uri.parse(url),
+    invalidateCacheIfOlderThan: const Duration(days: 7),
+    videoPlayerOptions: VideoPlayerOptions(
+      allowBackgroundPlayback: false,
+      mixWithOthers: true,
+    ),
+);
 
       await videoPlayerController?.initialize();
 
-      if (videoPlayerController != null && (videoPlayerController?.value.isInitialized ?? false)) {
+      if (videoPlayerController != null && (videoPlayerController?.controller.value.isInitialized ?? false)) {
         chewieController = ChewieController(
-          videoPlayerController: videoPlayerController!,
+          videoPlayerController: videoPlayerController!.controller,
           looping: true,
           allowedScreenSleep: false,
           allowMuting: false,
@@ -129,10 +136,10 @@ videoPlayerController =
           isVideoLoading.value = true;
         }
 
-        videoPlayerController?.addListener(
+        videoPlayerController?.controller.addListener(
           () {
             // Use => If Video Buffering then show loading....
-            videoPlayerController!.value.isBuffering ? isBuffering.value = true : isBuffering.value = false;
+            videoPlayerController!.controller.value.isBuffering ? isBuffering.value = true : isBuffering.value = false;
 
             if (isReelsPage.value == false) {
               onStopVideo(); // Use => On Change Routes...
@@ -154,12 +161,12 @@ videoPlayerController =
 
   void onStopVideo() {
     isPlaying.value = false;
-    videoPlayerController?.pause();
+    videoPlayerController?.controller.pause();
   }
 
   void onPlayVideo() {
     isPlaying.value = true;
-    videoPlayerController?.play();
+    videoPlayerController?.controller.play();
   }
 
   void onDisposeVideoPlayer() {
@@ -185,7 +192,7 @@ videoPlayerController =
     // Use => Video Banned
     if (controller.mainShorts[widget.index].isBanned == false) {
       if (isVideoLoading.value == false) {
-        videoPlayerController!.value.isPlaying ? onStopVideo() : onPlayVideo();
+        videoPlayerController!.controller.value.isPlaying ? onStopVideo() : onPlayVideo();
         isShowIcon.value = true;
         await 2.seconds.delay();
         isShowIcon.value = false;
@@ -197,7 +204,7 @@ videoPlayerController =
   }
 
   void onClickPlayPause() async {
-    videoPlayerController!.value.isPlaying ? onStopVideo() : onPlayVideo();
+    videoPlayerController!.controller.value.isPlaying ? onStopVideo() : onPlayVideo();
     if (isReelsPage.value == false) {
       isReelsPage.value = true; // Use => On Back Reels Page...
     }
@@ -302,7 +309,7 @@ videoPlayerController =
       (isVideoLoading.value == false && isReelsPage.value) ? onPlayVideo() : null;
     } else {
       // Restart Previous Video On Scrolling...
-      isVideoLoading.value == false ? videoPlayerController?.seekTo(Duration.zero) : null;
+      isVideoLoading.value == false ? videoPlayerController?.controller.seekTo(Duration.zero) : null;
       onStopVideo(); // Stop Previous Video On Scrolling...
     }
 
@@ -392,8 +399,8 @@ videoPlayerController =
                                 child: FittedBox(
                                   fit: BoxFit.cover,
                                   child: SizedBox(
-                                    width: videoPlayerController?.value.size.width ?? 0,
-                                    height: videoPlayerController?.value.size.height ?? 0,
+                                    width: videoPlayerController?.controller.value.size.width ?? 0,
+                                    height: videoPlayerController?.controller.value.size.height ?? 0,
                                     child: Chewie(controller: chewieController!),
                                   ),
                                 ),
