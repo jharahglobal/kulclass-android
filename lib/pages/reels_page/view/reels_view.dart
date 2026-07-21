@@ -106,7 +106,7 @@ class ReelsView extends GetView<ReelsController> {
           child: PreloadPageView.builder(
             controller: controller.preloadPageController,
             itemCount: controller.mainReels.length,
-            preloadPagesCount: 4,
+            preloadPagesCount: 1,
             scrollDirection: Axis.vertical,
             onPageChanged: (value) async {
               controller.onPagination(value);
