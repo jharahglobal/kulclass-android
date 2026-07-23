@@ -90,6 +90,7 @@ Future<void> main() async {
     await GetStorage.init();
     await InternetConnection.init();
     await onInitializeBranchIo();
+    BranchIoServices.onListenBranchIoLinks();
 
     final identity = await PlatformDeviceId.getDeviceId;
     final fcmToken = await FirebaseMessaging.instance.getToken();
