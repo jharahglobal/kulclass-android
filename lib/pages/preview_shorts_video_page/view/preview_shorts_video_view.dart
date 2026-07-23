@@ -35,7 +35,7 @@ class PreviewShortsVideoView extends GetView<PreviewShortsVideoController> {
                 : PreloadPageView.builder(
                     controller: controller.preloadPageController,
                     itemCount: controller.mainShorts.length,
-                    preloadPagesCount: 1,
+                    preloadPagesCount: 2,
                     scrollDirection: Axis.vertical,
                     onPageChanged: (value) async {
                       controller.onChangePage(value);
