@@ -19,11 +19,6 @@ class ReelsView extends GetView<ReelsController> {
 
   @override
   Widget build(BuildContext context) {
-    if (controller.isFirstTime) {
-      controller.isFirstTime = false;
-      controller.init();
-    }
-
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: AppColor.transparent,
