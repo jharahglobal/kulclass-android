@@ -15,7 +15,7 @@ class FetchLoginUserProfileApi {
     final headers = {"key": Api.secretKey};
 
     try {
-      final response = await http.get(uri, headers: headers);
+      final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
