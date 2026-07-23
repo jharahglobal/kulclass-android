@@ -7,6 +7,7 @@ import 'package:auralive/pages/reels_page/model/fetch_reels_model.dart';
 import 'package:auralive/routes/app_routes.dart';
 import 'package:auralive/utils/branch_io_services.dart';
 import 'package:auralive/utils/database.dart';
+import 'package:auralive/utils/utils.dart';
 
 import '../../bottom_bar_page/controller/bottom_bar_controller.dart';
 
