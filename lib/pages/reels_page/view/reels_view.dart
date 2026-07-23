@@ -19,9 +19,7 @@ class ReelsView extends GetView<ReelsController> {
 
   @override
   Widget build(BuildContext context) {
-    if (Get.currentRoute == AppRoutes.bottomBarPage) {
-      controller.init();
-    }
+    // init() is now handled in controller.onInit() and RefreshIndicator
 
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -106,7 +104,7 @@ class ReelsView extends GetView<ReelsController> {
           child: PreloadPageView.builder(
             controller: controller.preloadPageController,
             itemCount: controller.mainReels.length,
-            preloadPagesCount: 1,
+            preloadPagesCount: 2,
             scrollDirection: Axis.vertical,
             onPageChanged: (value) async {
               controller.onPagination(value);
