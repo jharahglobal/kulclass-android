@@ -14,6 +14,7 @@ import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
 import 'package:flutter/foundation.dart';
 
 import 'firebase_options.dart';
+import 'package:auralive/utils/branch_io_services.dart';
 import 'package:auralive/pages/splash_screen_page/api/admin_setting_api.dart';
 import 'package:auralive/localization/locale_constant.dart';
 import 'package:auralive/localization/localizations_delegate.dart';
@@ -27,7 +28,6 @@ import 'package:auralive/utils/internet_connection.dart';
 import 'package:auralive/utils/notification_services.dart';
 import 'package:auralive/utils/platform_device_id.dart';
 import 'package:auralive/utils/utils.dart';
-import 'package:auralive/utils/branch_io_services.dart';
 
 /// ✅ Top-level background handler (required by Firebase)
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -93,11 +93,9 @@ Future<void> main() async {
     await onInitializeBranchIo();
     BranchIoServices.onListenBranchIoLinks();
 
-    final identity = await PlatformDeviceId.getDeviceId;
-    final fcmToken = await FirebaseMessaging.instance.getToken();
-    if (identity != null && fcmToken != null) {
-      await Database.init(identity, fcmToken);
-    }
+    final identity = await PlatformDeviceId.getDeviceId ?? "";
+    final fcmToken = await FirebaseMessaging.instance.getToken() ?? "";
+    await Database.init(identity, fcmToken);
 
     if (Platform.isAndroid || Platform.isIOS) {
       await NotificationServices.firebaseInit();
