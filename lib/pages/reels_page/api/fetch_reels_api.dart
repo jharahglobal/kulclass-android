@@ -15,7 +15,11 @@ class FetchReelsApi {
 
     Utils.showLog("Get Reels Pagination Page => $startPagination");
 
-    final uri = Uri.parse("${Api.fetchReels}?start=$startPagination&limit=$limitPagination&userId=$loginUserId&videoId=$videoId");
+    String url = "${Api.fetchReels}?start=$startPagination&limit=$limitPagination&userId=$loginUserId";
+    if (videoId.isNotEmpty) {
+      url += "&videoId=$videoId";
+    }
+    final uri = Uri.parse(url);
     Utils.showLog("Get Reels Api Url => $uri");
 
     final headers = {"key": Api.secretKey};
