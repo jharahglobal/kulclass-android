@@ -14,6 +14,7 @@ class ReelsController extends GetxController {
   PreloadPageController preloadPageController = PreloadPageController();
 
   bool isLoadingReels = false;
+  bool _isInitialized = false;
   FetchReelsModel? fetchReelsModel;
 
   bool isPaginationLoading = false;
@@ -27,8 +28,9 @@ class ReelsController extends GetxController {
 
   @override
   void onInit() {
-    // TODO: implement onInit
     super.onInit();
+    // Pre-initialize on controller creation
+    init();
 
     quickAction.setShortcutItems([
       ShortcutItem(
@@ -70,13 +72,17 @@ class ReelsController extends GetxController {
   }
 
   Future<void> init() async {
+    if (isLoadingReels) return;
+    
     currentPageIndex = 0;
     mainReels.clear();
     FetchReelsApi.startPagination = 0;
     isLoadingReels = true;
+    _isInitialized = true;
     update(["onGetReels"]);
     await onGetReels();
     isLoadingReels = false;
+    update(["onGetReels"]);
   }
 
   void onPagination(int value) async {
