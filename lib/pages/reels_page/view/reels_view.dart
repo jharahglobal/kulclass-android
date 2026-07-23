@@ -19,7 +19,10 @@ class ReelsView extends GetView<ReelsController> {
 
   @override
   Widget build(BuildContext context) {
-    // init() is now handled in controller.onInit() and RefreshIndicator
+    if (controller.isFirstTime) {
+      controller.isFirstTime = false;
+      controller.init();
+    }
 
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
