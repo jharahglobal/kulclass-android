@@ -27,6 +27,7 @@ import 'package:auralive/utils/internet_connection.dart';
 import 'package:auralive/utils/notification_services.dart';
 import 'package:auralive/utils/platform_device_id.dart';
 import 'package:auralive/utils/utils.dart';
+import 'package:auralive/utils/branch_io_services.dart';
 
 /// ✅ Top-level background handler (required by Firebase)
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
