@@ -4,6 +4,8 @@ import 'package:auralive/pages/reels_page/model/fetch_reels_model.dart';
 import 'package:auralive/utils/api.dart';
 import 'package:auralive/utils/utils.dart';
 
+import '../../../utils/utils.dart';
+
 class FetchReelsApi {
   static int startPagination = 0;
   static int limitPagination = 20;
@@ -25,7 +27,7 @@ class FetchReelsApi {
     final headers = {"key": Api.secretKey};
 
     try {
-      var response = await http.get(uri, headers: headers);
+      var response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
