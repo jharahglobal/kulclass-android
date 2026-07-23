@@ -14,7 +14,6 @@ class ReelsController extends GetxController {
   PreloadPageController preloadPageController = PreloadPageController();
 
   bool isLoadingReels = false;
-  bool isFirstTime = true;
   FetchReelsModel? fetchReelsModel;
 
   bool isPaginationLoading = false;
@@ -29,6 +28,7 @@ class ReelsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    init();
 
     quickAction.setShortcutItems([
       ShortcutItem(
@@ -75,19 +75,29 @@ class ReelsController extends GetxController {
   }
 
   Future<void> init() async {
-    if (isLoadingReels) return;
-    
-    currentPageIndex = 0;
-    mainReels.clear();
-    FetchReelsApi.startPagination = 0;
-    isLoadingReels = true;
-    update(["onGetReels"]);
-    await onGetReels();
-    isLoadingReels = false;
-    update(["onGetReels"]);
+    try {
+      Utils.showLog("ReelsController init() called. isLoadingReels: $isLoadingReels");
+      if (isLoadingReels) return;
+
+      isLoadingReels = true;
+      update(["onGetReels"]);
+      
+      currentPageIndex = 0;
+      mainReels.clear();
+      FetchReelsApi.startPagination = 0;
+      
+      await onGetReels();
+      Utils.showLog("ReelsController init() completed. mainReels length: ${mainReels.length}");
+    } catch (e) {
+      Utils.showLog("ReelsController init() error: $e");
+    } finally {
+      isLoadingReels = false;
+      update(["onGetReels"]);
+    }
   }
 
   void onPagination(int value) async {
+    if (mainReels.isEmpty) return;
     if ((mainReels.length - 1) == value) {
       if (isPaginationLoading == false) {
         isPaginationLoading = true;
@@ -105,35 +115,38 @@ class ReelsController extends GetxController {
   }
 
   Future<void> onGetReels() async {
-    fetchReelsModel = null;
-    fetchReelsModel = await FetchReelsApi.callApi(loginUserId: Database.loginUserId, videoId: BranchIoServices.eventId);
+    try {
+      Utils.showLog("ReelsController onGetReels() called. loginUserId: ${Database.loginUserId}, eventId: ${BranchIoServices.eventId}");
+      fetchReelsModel = null;
+      fetchReelsModel = await FetchReelsApi.callApi(loginUserId: Database.loginUserId, videoId: BranchIoServices.eventId);
 
-    if (fetchReelsModel?.data != null) {
-      if (fetchReelsModel!.data!.isNotEmpty) {
-        final paginationData = fetchReelsModel?.data ?? [];
+      if (fetchReelsModel?.data != null) {
+        if (fetchReelsModel!.data!.isNotEmpty) {
+          final paginationData = fetchReelsModel?.data ?? [];
 
-        // <<< Code Start *** >>> Google Ad Code <<< ***
-        if (GoogleAdServices.isShowFullNativeAdReels) {
-          for (int i = 0; i < paginationData.length; i++) {
-            if (i != 0 && i % GoogleAdServices.adShowIndex == 0) {
-              mainReels.add(null);
-              mainReels.add(paginationData[i]);
-            } else {
-              mainReels.add(paginationData[i]);
+          // <<< Code Start *** >>> Google Ad Code <<< ***
+          if (GoogleAdServices.isShowFullNativeAdReels) {
+            for (int i = 0; i < paginationData.length; i++) {
+              if (i != 0 && i % GoogleAdServices.adShowIndex == 0) {
+                mainReels.add(null);
+                mainReels.add(paginationData[i]);
+              } else {
+                mainReels.add(paginationData[i]);
+              }
             }
+          } else {
+            mainReels.addAll(paginationData);
           }
-        } else {
-          mainReels.addAll(paginationData);
+          // *** >>> Google Ad Code <<< *** Code End >>>
+
+          update(["onGetReels"]);
         }
-        // *** >>> Google Ad Code <<< *** Code End >>>
-
-        // mainReels.addAll(paginationData);
-
+      }
+      if (mainReels.isEmpty) {
         update(["onGetReels"]);
       }
-    }
-    if (mainReels.isEmpty) {
-      update(["onGetReels"]);
+    } catch (e) {
+      Utils.showLog("ReelsController onGetReels() error: $e");
     }
   }
 }
