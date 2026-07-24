@@ -9,14 +9,14 @@ import 'package:file_picker/file_picker.dart';
 import 'package:auralive/utils/database.dart';
 import 'package:auralive/utils/utils.dart';
 
-class PreviewShortsVideoView extends StatefulWidget {
-  const PreviewShortsVideoView({super.key});
+class ReelsWebView extends StatefulWidget {
+  const ReelsWebView({super.key});
 
   @override
-  State<PreviewShortsVideoView> createState() => _PreviewShortsVideoViewState();
+  State<ReelsWebView> createState() => _ReelsWebViewState();
 }
 
-class _PreviewShortsVideoViewState extends State<PreviewShortsVideoView> {
+class _ReelsWebViewState extends State<ReelsWebView> {
   WebViewController? webViewController;
 
   @override
@@ -33,7 +33,7 @@ class _PreviewShortsVideoViewState extends State<PreviewShortsVideoView> {
       final webName = Database.fetchLoginUserProfileModel?.user?.name ?? '';
 
       final url = "https://kulclass.com/live.php?email=$userEmail&uid=$webUserId&name=$webName";
-      Utils.showLog("🎯 Loading Shorts WebView: $url");
+      Utils.showLog("🎯 Loading Full Reels WebView: $url");
 
       late final PlatformWebViewControllerCreationParams params;
       if (WebViewPlatform.instance is WebKitWebViewPlatform) {
@@ -46,15 +46,15 @@ class _PreviewShortsVideoViewState extends State<PreviewShortsVideoView> {
 
       webViewController = WebViewController.fromPlatformCreationParams(params)
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(Colors.black) // Prevents white flash
+        ..setBackgroundColor(Colors.black)
         ..setUserAgent("Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.196 Mobile Safari/537.36")
         ..loadRequest(Uri.parse(url));
 
       if (webViewController!.platform is AndroidWebViewController) {
         final androidController = webViewController!.platform as AndroidWebViewController;
         androidController.setMediaPlaybackRequiresUserGesture(false);
-
-        // --- ENABLE FILE PICKER FOR ANDROID ---
+        
+        // --- FIX: ENABLE FILE PICKER FOR ANDROID ---
         androidController.setOnShowFileSelector((FileSelectorParams params) async {
           try {
             final FileType type;
@@ -84,7 +84,7 @@ class _PreviewShortsVideoViewState extends State<PreviewShortsVideoView> {
         });
       }
     } catch (e) {
-      Utils.showLog("Shorts WebView Initialization Failed: $e");
+      Utils.showLog("Reels WebView Initialization Failed: $e");
     }
   }
 
@@ -99,30 +99,9 @@ class _PreviewShortsVideoViewState extends State<PreviewShortsVideoView> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          if (webViewController != null)
-            SizedBox.expand(
-              child: WebViewWidget(controller: webViewController!),
-            ),
-          Positioned(
-            top: 40,
-            left: 15,
-            child: GestureDetector(
-              onTap: () => Get.back(),
-              child: Container(
-                height: 40,
-                width: 40,
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.arrow_back, color: Colors.white, size: 25),
-              ),
-            ),
-          ),
-        ],
-      ),
+      body: webViewController != null
+          ? WebViewWidget(controller: webViewController!)
+          : const SizedBox.shrink(),
     );
   }
 }
