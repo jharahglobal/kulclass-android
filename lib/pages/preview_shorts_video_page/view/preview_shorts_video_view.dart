@@ -17,7 +17,6 @@ class PreviewShortsVideoView extends StatefulWidget {
 
 class _PreviewShortsVideoViewState extends State<PreviewShortsVideoView> {
   WebViewController? webViewController;
-  bool isPageLoading = true;
 
   @override
   void initState() {
@@ -46,13 +45,8 @@ class _PreviewShortsVideoViewState extends State<PreviewShortsVideoView> {
 
       webViewController = WebViewController.fromPlatformCreationParams(params)
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setNavigationDelegate(
-          NavigationDelegate(
-            onPageFinished: (_) {
-              if (mounted) setState(() => isPageLoading = false);
-            },
-          ),
-        )
+        ..setBackgroundColor(Colors.black) // Prevents white flash
+        ..setUserAgent("Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.196 Mobile Safari/537.36")
         ..loadRequest(Uri.parse(url));
 
       if (webViewController!.platform is AndroidWebViewController) {
@@ -80,8 +74,6 @@ class _PreviewShortsVideoViewState extends State<PreviewShortsVideoView> {
             SizedBox.expand(
               child: WebViewWidget(controller: webViewController!),
             ),
-          if (isPageLoading)
-            const Center(child: CircularProgressIndicator(color: Colors.white)),
           Positioned(
             top: 40,
             left: 15,
