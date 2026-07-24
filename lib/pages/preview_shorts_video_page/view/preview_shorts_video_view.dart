@@ -1,55 +1,104 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:auralive/ui/no_data_found_ui.dart';
-import 'package:auralive/pages/preview_shorts_video_page/controller/preview_shorts_video_controller.dart';
-import 'package:auralive/pages/preview_shorts_video_page/widget/preview_shorts_video_widget.dart';
-import 'package:auralive/shimmer/preview_shorts_video_shimmer_ui.dart';
-import 'package:auralive/utils/color.dart';
-import 'package:preload_page_view/preload_page_view.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
+import 'package:auralive/utils/database.dart';
+import 'package:auralive/utils/utils.dart';
 
-class PreviewShortsVideoView extends GetView<PreviewShortsVideoController> {
+class PreviewShortsVideoView extends StatefulWidget {
   const PreviewShortsVideoView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    Future.delayed(
-      Duration(milliseconds: 100),
-      () {
-        SystemChrome.setSystemUIOverlayStyle(
-          SystemUiOverlayStyle(
-            statusBarColor: AppColor.transparent,
-            statusBarIconBrightness: Brightness.light,
-          ),
+  State<PreviewShortsVideoView> createState() => _PreviewShortsVideoViewState();
+}
+
+class _PreviewShortsVideoViewState extends State<PreviewShortsVideoView> {
+  WebViewController? webViewController;
+  bool isPageLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    initializeWebView();
+  }
+
+  Future<void> initializeWebView() async {
+    try {
+      final storage = GetStorage();
+      final userEmail = storage.read('user_email') ?? '';
+      final webUserId = Database.loginUserId;
+      final webName = Database.fetchLoginUserProfileModel?.user?.name ?? '';
+
+      final url = "https://kulclass.com/live.php?email=$userEmail&uid=$webUserId&name=$webName";
+      Utils.showLog("🎯 Loading Shorts WebView: $url");
+
+      late final PlatformWebViewControllerCreationParams params;
+      if (WebViewPlatform.instance is WebKitWebViewPlatform) {
+        params = WebKitWebViewControllerCreationParams(
+          allowsInlineMediaPlayback: true,
         );
-      },
+      } else {
+        params = const PlatformWebViewControllerCreationParams();
+      }
+
+      webViewController = WebViewController.fromPlatformCreationParams(params)
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setNavigationDelegate(
+          NavigationDelegate(
+            onPageFinished: (_) {
+              if (mounted) setState(() => isPageLoading = false);
+            },
+          ),
+        )
+        ..loadRequest(Uri.parse(url));
+
+      if (webViewController!.platform is AndroidWebViewController) {
+        (webViewController!.platform as AndroidWebViewController).setMediaPlaybackRequiresUserGesture(false);
+      }
+    } catch (e) {
+      Utils.showLog("Shorts WebView Initialization Failed: $e");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+      ),
     );
 
     return Scaffold(
-      body: GetBuilder<PreviewShortsVideoController>(
-        id: "onGetShorts",
-        builder: (controller) => controller.isLoading
-            ? PreviewShortsVideoShimmerUi()
-            : controller.mainShorts.isEmpty
-                ? NoDataFoundUi(iconSize: 140, fontSize: 16)
-                : PreloadPageView.builder(
-                    controller: controller.preloadPageController,
-                    itemCount: controller.mainShorts.length,
-                    preloadPagesCount: 1,
-                    scrollDirection: Axis.vertical,
-                    onPageChanged: (value) async {
-                      controller.onChangePage(value);
-                    },
-                    itemBuilder: (context, index) {
-                      return GetBuilder<PreviewShortsVideoController>(
-                        id: "onChangePage",
-                        builder: (controller) => PreviewShortsView(
-                          index: index,
-                          currentPageIndex: controller.currentPageIndex,
-                        ),
-                      );
-                    },
-                  ),
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          if (webViewController != null)
+            SizedBox.expand(
+              child: WebViewWidget(controller: webViewController!),
+            ),
+          if (isPageLoading)
+            const Center(child: CircularProgressIndicator(color: Colors.white)),
+          Positioned(
+            top: 40,
+            left: 15,
+            child: GestureDetector(
+              onTap: () => Get.back(),
+              child: Container(
+                height: 40,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.arrow_back, color: Colors.white, size: 25),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
