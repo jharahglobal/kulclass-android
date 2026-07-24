@@ -139,7 +139,7 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.reelsPage,
-      page: () => const ReelsView(),
+      page: () => const ReelsWebView(),
       binding: ReelsBinding(),
     ),
     GetPage(
@@ -193,7 +193,7 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.previewShortsVideoPage,
-      page: () => const PreviewShortsVideoView(),
+      page: () => const ShortsWebView(),
       binding: PreviewShortsVideoBinding(),
     ),
 
