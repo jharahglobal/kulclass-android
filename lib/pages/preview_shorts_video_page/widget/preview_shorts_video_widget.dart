@@ -1,9 +1,13 @@
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:auralive/pages/preview_shorts_video_page/controller/preview_shorts_video_controller.dart';
 import 'package:auralive/utils/utils.dart';
+import 'package:auralive/utils/color.dart';
+import 'package:auralive/utils/asset.dart';
 
 class PreviewShortsView extends StatefulWidget {
   const PreviewShortsView({super.key, required this.index, required this.currentPageIndex});
@@ -41,12 +45,17 @@ class _PreviewShortsViewState extends State<PreviewShortsView> {
 
       webViewController = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setAllowsInlineMediaPlayback(true)
         ..setNavigationDelegate(
           NavigationDelegate(onPageFinished: (_) { isVideoLoading.value = false; }),
         )
         ..loadRequest(Uri.parse(url));
 
+      if (webViewController!.platform is AndroidWebViewController) {
+        (webViewController!.platform as AndroidWebViewController).setMediaPlaybackRequiresUserGesture(false);
+      }
+      if (webViewController!.platform is WebKitWebViewController) {
+        (webViewController!.platform as WebKitWebViewController).setAllowsInlineMediaPlayback(true);
+      }
     } catch (e) {
       Utils.showLog("Shorts WebView Initialization Failed !!! ${widget.index} => $e");
     }
