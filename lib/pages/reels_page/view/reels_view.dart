@@ -1,78 +1,88 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:auralive/ui/no_data_found_ui.dart';
-import 'package:auralive/pages/reels_page/controller/reels_controller.dart';
-import 'package:auralive/pages/reels_page/widget/reels_widget.dart';
-import 'package:auralive/routes/app_routes.dart';
-import 'package:auralive/shimmer/reels_shimmer_ui.dart';
-import 'package:auralive/utils/color.dart';
-import 'package:preload_page_view/preload_page_view.dart';
-import 'package:auralive/utils/constant.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
+import 'package:auralive/utils/database.dart';
+import 'package:auralive/utils/utils.dart';
 
-class ReelsView extends GetView<ReelsController> {
+class ReelsView extends StatefulWidget {
   const ReelsView({super.key});
+
+  @override
+  State<ReelsView> createState() => _ReelsViewState();
+}
+
+class _ReelsViewState extends State<ReelsView> {
+  WebViewController? webViewController;
+  bool isPageLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    initializeWebView();
+  }
+
+  Future<void> initializeWebView() async {
+    try {
+      final storage = GetStorage();
+      final userEmail = storage.read('user_email') ?? '';
+      final webUserId = Database.loginUserId;
+      final webName = Database.fetchLoginUserProfileModel?.user?.name ?? '';
+
+      final url = "https://kulclass.com/live.php?email=$userEmail&uid=$webUserId&name=$webName";
+      Utils.showLog("🎯 Loading Full Reels WebView (iOS): $url");
+
+      late final PlatformWebViewControllerCreationParams params;
+      if (WebViewPlatform.instance is WebKitWebViewPlatform) {
+        params = WebKitWebViewControllerCreationParams(
+          allowsInlineMediaPlayback: true,
+        );
+      } else {
+        params = const PlatformWebViewControllerCreationParams();
+      }
+
+      webViewController = WebViewController.fromPlatformCreationParams(params)
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setNavigationDelegate(
+          NavigationDelegate(
+            onPageFinished: (_) {
+              if (mounted) setState(() => isPageLoading = false);
+            },
+          ),
+        )
+        ..loadRequest(Uri.parse(url));
+
+      if (webViewController!.platform is AndroidWebViewController) {
+        (webViewController!.platform as AndroidWebViewController).setMediaPlaybackRequiresUserGesture(false);
+      }
+    } catch (e) {
+      Utils.showLog("Reels WebView Initialization Failed: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
-        statusBarColor: AppColor.transparent,
+        statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
       ),
     );
 
     return Scaffold(
-      body: GetBuilder<ReelsController>(
-        id: "onGetReels",
-        builder: (controller) => controller.isLoadingReels
-            ? ReelsShimmerUi()
-            : controller.mainReels.isEmpty
-            ? RefreshIndicator(
-          color: AppColor.primary,
-          onRefresh: () async => await controller.init(),
-          child: SingleChildScrollView(
-            child: SizedBox(
-              height: (Get.height + 1) - AppConstant.bottomBarSize,
-              child: const Center(
-                child: NoDataFoundUi(iconSize: 160, fontSize: 19),
-              ),
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          if (webViewController != null)
+            SizedBox.expand(
+              child: WebViewWidget(controller: webViewController!),
             ),
-          ),
-        )
-            : RefreshIndicator(
-          color: AppColor.primary,
-          onRefresh: () async {
-            await 400.milliseconds.delay();
-            await controller.init();
-          },
-          child: PreloadPageView.builder(
-            controller: controller.preloadPageController,
-            itemCount: controller.mainReels.length,
-            preloadPagesCount: 1,
-            scrollDirection: Axis.vertical,
-            onPageChanged: (value) async {
-              controller.onPagination(value);
-              controller.onChangePage(value);
-            },
-            itemBuilder: (context, index) {
-              return GetBuilder<ReelsController>(
-                id: "onChangePage",
-                builder: (controller) => PreviewReelsView(
-                  index: index,
-                  currentPageIndex: controller.currentPageIndex,
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-      bottomNavigationBar: GetBuilder<ReelsController>(
-        id: "onPagination",
-        builder: (controller) => Visibility(
-          visible: controller.isPaginationLoading,
-          child: LinearProgressIndicator(color: AppColor.primary),
-        ),
+          if (isPageLoading)
+            const Center(child: CircularProgressIndicator(color: Colors.white)),
+        ],
       ),
     );
   }
