@@ -1,8 +1,11 @@
 import 'package:get_storage/get_storage.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:auralive/pages/reels_page/controller/reels_controller.dart';
+import 'package:auralive/utils/database.dart';
 import 'package:auralive/utils/utils.dart';
 
 class PreviewReelsView extends StatefulWidget {
@@ -58,7 +61,6 @@ class _PreviewReelsViewState extends State<PreviewReelsView> {
 
       webViewController = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setAllowsInlineMediaPlayback(true)
         ..setNavigationDelegate(
           NavigationDelegate(
             onPageFinished: (_) {
@@ -68,6 +70,12 @@ class _PreviewReelsViewState extends State<PreviewReelsView> {
         )
         ..loadRequest(Uri.parse(url));
 
+      if (webViewController!.platform is AndroidWebViewController) {
+        (webViewController!.platform as AndroidWebViewController).setMediaPlaybackRequiresUserGesture(false);
+      }
+      if (webViewController!.platform is WebKitWebViewController) {
+        (webViewController!.platform as WebKitWebViewController).setAllowsInlineMediaPlayback(true);
+      }
     } catch (e) {
       Utils.showLog("Reels WebView Initialization Failed !!! ${widget.index} => $e");
     }
