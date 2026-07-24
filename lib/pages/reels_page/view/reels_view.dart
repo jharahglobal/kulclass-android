@@ -6,6 +6,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:auralive/routes/app_routes.dart';
 import 'package:auralive/utils/database.dart';
 import 'package:auralive/utils/utils.dart';
 
@@ -48,6 +49,15 @@ class _ReelsWebViewState extends State<ReelsWebView> {
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..setBackgroundColor(Colors.black)
         ..setUserAgent("Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.196 Mobile Safari/537.36")
+        ..addJavaScriptChannel(
+          'ToProfile',
+          onMessageReceived: (JavaScriptMessage message) {
+            if (message.message.isNotEmpty) {
+              Utils.showLog("Opening Profile for User ID: ${message.message}");
+              Get.toNamed(AppRoutes.previewUserProfilePage, arguments: message.message);
+            }
+          },
+        )
         ..loadRequest(Uri.parse(url));
 
       if (webViewController!.platform is AndroidWebViewController) {
