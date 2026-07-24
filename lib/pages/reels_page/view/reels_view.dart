@@ -5,17 +5,18 @@ import 'package:get_storage/get_storage.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:auralive/utils/database.dart';
 import 'package:auralive/utils/utils.dart';
 
-class ReelsView extends StatefulWidget {
-  const ReelsView({super.key});
+class PreviewShortsVideoView extends StatefulWidget {
+  const PreviewShortsVideoView({super.key});
 
   @override
-  State<ReelsView> createState() => _ReelsViewState();
+  State<PreviewShortsVideoView> createState() => _PreviewShortsVideoViewState();
 }
 
-class _ReelsViewState extends State<ReelsView> {
+class _PreviewShortsVideoViewState extends State<PreviewShortsVideoView> {
   WebViewController? webViewController;
 
   @override
@@ -32,7 +33,7 @@ class _ReelsViewState extends State<ReelsView> {
       final webName = Database.fetchLoginUserProfileModel?.user?.name ?? '';
 
       final url = "https://kulclass.com/live.php?email=$userEmail&uid=$webUserId&name=$webName";
-      Utils.showLog("🎯 Loading Full Reels WebView: $url");
+      Utils.showLog("🎯 Loading Shorts WebView: $url");
 
       late final PlatformWebViewControllerCreationParams params;
       if (WebViewPlatform.instance is WebKitWebViewPlatform) {
@@ -46,14 +47,44 @@ class _ReelsViewState extends State<ReelsView> {
       webViewController = WebViewController.fromPlatformCreationParams(params)
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..setBackgroundColor(Colors.black) // Prevents white flash
-        ..setUserAgent("Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.196 Mobile Safari/537.36") // Fixes sound/media compatibility
+        ..setUserAgent("Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.196 Mobile Safari/537.36")
         ..loadRequest(Uri.parse(url));
 
       if (webViewController!.platform is AndroidWebViewController) {
-        (webViewController!.platform as AndroidWebViewController).setMediaPlaybackRequiresUserGesture(false);
+        final androidController = webViewController!.platform as AndroidWebViewController;
+        androidController.setMediaPlaybackRequiresUserGesture(false);
+
+        // --- ENABLE FILE PICKER FOR ANDROID ---
+        androidController.setOnShowFileSelector((FileSelectorParams params) async {
+          try {
+            final FileType type;
+            if (params.acceptTypes.any((t) => t.contains('video'))) {
+              type = FileType.video;
+            } else if (params.acceptTypes.any((t) => t.contains('image'))) {
+              type = FileType.image;
+            } else {
+              type = FileType.any;
+            }
+
+            final result = await FilePicker.platform.pickFiles(
+              type: type,
+              allowMultiple: params.mode == FileSelectorMode.openMultiple,
+            );
+
+            if (result != null && result.files.isNotEmpty) {
+              return result.files
+                  .where((file) => file.path != null)
+                  .map((file) => Uri.file(file.path!).toString())
+                  .toList();
+            }
+          } catch (e) {
+            Utils.showLog("File Picker Error: $e");
+          }
+          return [];
+        });
       }
     } catch (e) {
-      Utils.showLog("Reels WebView Initialization Failed: $e");
+      Utils.showLog("Shorts WebView Initialization Failed: $e");
     }
   }
 
@@ -68,9 +99,30 @@ class _ReelsViewState extends State<ReelsView> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: webViewController != null
-          ? WebViewWidget(controller: webViewController!)
-          : const SizedBox.shrink(),
+      body: Stack(
+        children: [
+          if (webViewController != null)
+            SizedBox.expand(
+              child: WebViewWidget(controller: webViewController!),
+            ),
+          Positioned(
+            top: 40,
+            left: 15,
+            child: GestureDetector(
+              onTap: () => Get.back(),
+              child: Container(
+                height: 40,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.arrow_back, color: Colors.white, size: 25),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
