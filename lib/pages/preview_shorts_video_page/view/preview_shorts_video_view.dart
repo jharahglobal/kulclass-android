@@ -5,6 +5,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:auralive/utils/database.dart';
 import 'package:auralive/utils/utils.dart';
 
@@ -50,7 +51,37 @@ class _PreviewShortsVideoViewState extends State<PreviewShortsVideoView> {
         ..loadRequest(Uri.parse(url));
 
       if (webViewController!.platform is AndroidWebViewController) {
-        (webViewController!.platform as AndroidWebViewController).setMediaPlaybackRequiresUserGesture(false);
+        final androidController = webViewController!.platform as AndroidWebViewController;
+        androidController.setMediaPlaybackRequiresUserGesture(false);
+
+        // --- ENABLE FILE PICKER FOR ANDROID ---
+        androidController.setOnShowFileSelector((FileSelectorParams params) async {
+          try {
+            final FileType type;
+            if (params.acceptTypes.any((t) => t.contains('video'))) {
+              type = FileType.video;
+            } else if (params.acceptTypes.any((t) => t.contains('image'))) {
+              type = FileType.image;
+            } else {
+              type = FileType.any;
+            }
+
+            final result = await FilePicker.platform.pickFiles(
+              type: type,
+              allowMultiple: params.mode == FileSelectorMode.openMultiple,
+            );
+
+            if (result != null && result.files.isNotEmpty) {
+              return result.files
+                  .where((file) => file.path != null)
+                  .map((file) => Uri.file(file.path!).toString())
+                  .toList();
+            }
+          } catch (e) {
+            Utils.showLog("File Picker Error: $e");
+          }
+          return [];
+        });
       }
     } catch (e) {
       Utils.showLog("Shorts WebView Initialization Failed: $e");
