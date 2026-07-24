@@ -8,6 +8,7 @@ import 'package:auralive/routes/app_routes.dart';
 import 'package:auralive/utils/branch_io_services.dart';
 import 'package:auralive/utils/database.dart';
 import 'package:auralive/utils/utils.dart';
+import 'package:auralive/pages/splash_screen_page/api/create_report_api.dart';
 
 import '../../bottom_bar_page/controller/bottom_bar_controller.dart';
 
@@ -19,8 +20,7 @@ class ReelsController extends GetxController {
 
   bool isPaginationLoading = false;
 
-  List mainReels = []; // *** >>> Google Ad Code <<< ***
-  // List<Data> mainReels = [];
+  List mainReels = []; 
 
   int currentPageIndex = 0;
   final quickAction = QuickActions();
@@ -32,30 +32,14 @@ class ReelsController extends GetxController {
     init();
 
     quickAction.setShortcutItems([
-      ShortcutItem(
-        type: 'reel',
-        localizedTitle: 'Reel',
-        icon: "reel",
-      ),
-      ShortcutItem(
-        type: 'chat',
-        localizedTitle: 'Chat',
-        icon: "message",
-      ),
-      ShortcutItem(
-        type: 'feeds',
-        localizedTitle: 'Feeds',
-        icon: "feed",
-      ),
-      ShortcutItem(
-        type: 'search',
-        localizedTitle: 'Search',
-        icon: "search",
-      ),
+      ShortcutItem(type: 'reel', localizedTitle: 'Reel', icon: "reel"),
+      ShortcutItem(type: 'chat', localizedTitle: 'Chat', icon: "message"),
+      ShortcutItem(type: 'feeds', localizedTitle: 'Feeds', icon: "feed"),
+      ShortcutItem(type: 'search', localizedTitle: 'Search', icon: "search"),
     ]);
 
     quickAction.initialize(
-          (type) {
+      (type) {
         if (type == 'reel') {
           controller.onChangeBottomBar(0);
         } else if (type == 'chat') {
@@ -63,16 +47,10 @@ class ReelsController extends GetxController {
         } else if (type == 'feeds') {
           controller.onChangeBottomBar(2);
         } else if (type == 'search') {
-          // controller.onChangeBottomBar(0);
           Get.toNamed(AppRoutes.searchPage);
         }
       },
     );
-  }
-
-  @override
-  void onReady() {
-    super.onReady();
   }
 
   Future<void> init() async {
@@ -119,13 +97,27 @@ class ReelsController extends GetxController {
     try {
       Utils.showLog("ReelsController onGetReels() called. loginUserId: ${Database.loginUserId}, eventId: ${BranchIoServices.eventId}");
       fetchReelsModel = null;
-      fetchReelsModel = await FetchReelsApi.callApi(loginUserId: Database.loginUserId, videoId: BranchIoServices.eventId);
+      
+      fetchReelsModel = await FetchReelsApi.callApi(
+        loginUserId: Database.loginUserId, 
+        videoId: BranchIoServices.eventId
+      );
+
+      // --- GLOBAL FEED SAFETY NET (iOS Specific) ---
+      if (fetchReelsModel?.data == null || fetchReelsModel!.data!.isEmpty) {
+        if (BranchIoServices.eventId.isEmpty) {
+          Utils.showLog("Personalized feed empty. Fetching Global Trending Feed...");
+          fetchReelsModel = await FetchReelsApi.callApi(
+            loginUserId: "", // Forces Global Feed
+            videoId: ""
+          );
+        }
+      }
 
       if (fetchReelsModel?.data != null) {
         if (fetchReelsModel!.data!.isNotEmpty) {
           final paginationData = fetchReelsModel?.data ?? [];
 
-          // <<< Code Start *** >>> Google Ad Code <<< ***
           if (GoogleAdServices.isShowFullNativeAdReels) {
             for (int i = 0; i < paginationData.length; i++) {
               if (i != 0 && i % GoogleAdServices.adShowIndex == 0) {
@@ -138,7 +130,6 @@ class ReelsController extends GetxController {
           } else {
             mainReels.addAll(paginationData);
           }
-          // *** >>> Google Ad Code <<< *** Code End >>>
 
           update(["onGetReels"]);
         }
@@ -148,6 +139,27 @@ class ReelsController extends GetxController {
       }
     } catch (e) {
       Utils.showLog("ReelsController onGetReels() error: $e");
+    }
+  }
+
+  Future<void> onReportReel({required String reelId, required String reason}) async {
+    try {
+      bool? isSuccess = await CreateReportApi.callApi(
+        loginUserId: Database.loginUserId,
+        reportReason: reason,
+        eventType: 1, 
+        eventId: reelId,
+      );
+
+      if (isSuccess == true) {
+        mainReels.removeWhere((item) => item != null && item.id == reelId);
+        update(["onGetReels"]);
+        Utils.showToast("Reel reported and hidden.");
+      } else {
+        Utils.showToast("Failed to report.");
+      }
+    } catch (e) {
+      Utils.showLog("Error reporting reel: $e");
     }
   }
 }
