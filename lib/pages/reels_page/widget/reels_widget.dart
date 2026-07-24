@@ -59,7 +59,17 @@ class _PreviewReelsViewState extends State<PreviewReelsView> {
       final url = "https://kulclass.com/live.php?email=$userEmail&uid=$WebUserId&name=$WebName";
       Utils.showLog("🎯 Initialized Reels WebView URL: $url");
 
-      webViewController = WebViewController()
+      // Robust initialization with platform-specific params to allow sound/autoplay
+      late final PlatformWebViewControllerCreationParams params;
+      if (WebViewPlatform.instance is WebKitWebViewPlatform) {
+        params = WebKitWebViewControllerCreationParams(
+          allowsInlineMediaPlayback: true,
+        );
+      } else {
+        params = const PlatformWebViewControllerCreationParams();
+      }
+
+      webViewController = WebViewController.fromPlatformCreationParams(params)
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..setNavigationDelegate(
           NavigationDelegate(
@@ -72,9 +82,6 @@ class _PreviewReelsViewState extends State<PreviewReelsView> {
 
       if (webViewController!.platform is AndroidWebViewController) {
         (webViewController!.platform as AndroidWebViewController).setMediaPlaybackRequiresUserGesture(false);
-      }
-      if (webViewController!.platform is WebKitWebViewController) {
-        (webViewController!.platform as WebKitWebViewController).setAllowsInlineMediaPlayback(true);
       }
     } catch (e) {
       Utils.showLog("Reels WebView Initialization Failed !!! ${widget.index} => $e");
