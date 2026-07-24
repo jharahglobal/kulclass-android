@@ -43,7 +43,16 @@ class _PreviewShortsViewState extends State<PreviewShortsView> {
       final url = "https://kulclass.com/live.php?email=$userEmail&uid=$WebUserId&name=$WebName";
       Utils.showLog("🎯 Initialized Shorts WebView URL: $url");
 
-      webViewController = WebViewController()
+      late final PlatformWebViewControllerCreationParams params;
+      if (WebViewPlatform.instance is WebKitWebViewPlatform) {
+        params = WebKitWebViewControllerCreationParams(
+          allowsInlineMediaPlayback: true,
+        );
+      } else {
+        params = const PlatformWebViewControllerCreationParams();
+      }
+
+      webViewController = WebViewController.fromPlatformCreationParams(params)
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..setNavigationDelegate(
           NavigationDelegate(onPageFinished: (_) { isVideoLoading.value = false; }),
@@ -52,9 +61,6 @@ class _PreviewShortsViewState extends State<PreviewShortsView> {
 
       if (webViewController!.platform is AndroidWebViewController) {
         (webViewController!.platform as AndroidWebViewController).setMediaPlaybackRequiresUserGesture(false);
-      }
-      if (webViewController!.platform is WebKitWebViewController) {
-        (webViewController!.platform as WebKitWebViewController).setAllowsInlineMediaPlayback(true);
       }
     } catch (e) {
       Utils.showLog("Shorts WebView Initialization Failed !!! ${widget.index} => $e");
