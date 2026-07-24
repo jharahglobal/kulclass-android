@@ -9,14 +9,14 @@ import 'package:file_picker/file_picker.dart';
 import 'package:auralive/utils/database.dart';
 import 'package:auralive/utils/utils.dart';
 
-class PreviewShortsVideoView extends StatefulWidget {
-  const PreviewShortsVideoView({super.key});
+class ShortsWebView extends StatefulWidget {
+  const ShortsWebView({super.key});
 
   @override
-  State<PreviewShortsVideoView> createState() => _PreviewShortsVideoViewState();
+  State<ShortsWebView> createState() => _ShortsWebViewState();
 }
 
-class _PreviewShortsVideoViewState extends State<PreviewShortsVideoView> {
+class _ShortsWebViewState extends State<ShortsWebView> {
   WebViewController? webViewController;
 
   @override
@@ -46,7 +46,7 @@ class _PreviewShortsVideoViewState extends State<PreviewShortsVideoView> {
 
       webViewController = WebViewController.fromPlatformCreationParams(params)
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(Colors.black) // Prevents white flash
+        ..setBackgroundColor(Colors.black)
         ..setUserAgent("Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.196 Mobile Safari/537.36")
         ..loadRequest(Uri.parse(url));
 
@@ -54,7 +54,7 @@ class _PreviewShortsVideoViewState extends State<PreviewShortsVideoView> {
         final androidController = webViewController!.platform as AndroidWebViewController;
         androidController.setMediaPlaybackRequiresUserGesture(false);
 
-        // --- ENABLE FILE PICKER FOR ANDROID ---
+        // --- FIX: ENABLE FILE PICKER FOR ANDROID ---
         androidController.setOnShowFileSelector((FileSelectorParams params) async {
           try {
             final FileType type;
