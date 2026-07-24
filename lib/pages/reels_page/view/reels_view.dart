@@ -17,7 +17,6 @@ class ReelsView extends StatefulWidget {
 
 class _ReelsViewState extends State<ReelsView> {
   WebViewController? webViewController;
-  bool isPageLoading = true;
 
   @override
   void initState() {
@@ -33,7 +32,7 @@ class _ReelsViewState extends State<ReelsView> {
       final webName = Database.fetchLoginUserProfileModel?.user?.name ?? '';
 
       final url = "https://kulclass.com/live.php?email=$userEmail&uid=$webUserId&name=$webName";
-      Utils.showLog("🎯 Loading Full Reels WebView (iOS): $url");
+      Utils.showLog("🎯 Loading Full Reels WebView: $url");
 
       late final PlatformWebViewControllerCreationParams params;
       if (WebViewPlatform.instance is WebKitWebViewPlatform) {
@@ -46,13 +45,8 @@ class _ReelsViewState extends State<ReelsView> {
 
       webViewController = WebViewController.fromPlatformCreationParams(params)
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setNavigationDelegate(
-          NavigationDelegate(
-            onPageFinished: (_) {
-              if (mounted) setState(() => isPageLoading = false);
-            },
-          ),
-        )
+        ..setBackgroundColor(Colors.black) // Prevents white flash
+        ..setUserAgent("Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.196 Mobile Safari/537.36") // Fixes sound/media compatibility
         ..loadRequest(Uri.parse(url));
 
       if (webViewController!.platform is AndroidWebViewController) {
@@ -74,16 +68,9 @@ class _ReelsViewState extends State<ReelsView> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          if (webViewController != null)
-            SizedBox.expand(
-              child: WebViewWidget(controller: webViewController!),
-            ),
-          if (isPageLoading)
-            const Center(child: CircularProgressIndicator(color: Colors.white)),
-        ],
-      ),
+      body: webViewController != null
+          ? WebViewWidget(controller: webViewController!)
+          : const SizedBox.shrink(),
     );
   }
 }
