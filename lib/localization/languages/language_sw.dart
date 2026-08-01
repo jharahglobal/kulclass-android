@@ -1,7 +1,7 @@
 import 'package:auralive/utils/enums.dart';
 
 final Map<String, String> swKE = {
-  EnumLocal.txtAppName.name: "Shortie",
+  EnumLocal.txtAppName.name: "KulClass",
   EnumLocal.txtSkip.name: "Ruka",
   EnumLocal.txtOnBoardingTitle_1.name: "Programu Bora ya Mitandao ya Kijamii ya Karne",
   EnumLocal.txtOnBoardingTitle_2.name: "Tuungane na Kila Mtu Duniani",
